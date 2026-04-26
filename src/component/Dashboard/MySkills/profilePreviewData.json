@@ -1,0 +1,242 @@
+[
+  {
+    "id": "john-doe",
+    "fullName": "John Doe",
+    "roleLabel": "Learner & Mentor",
+    "rating": 4.9,
+    "location": "San Francisco, CA",
+    "memberSince": "2026-01-01",
+    "credits": 12,
+    "about": "Passionate about technology and education. I love teaching web development and learning new languages. Member of FENNEKY since January 2026, dedicated to knowledge sharing and community growth.",
+    "languages": ["English", "Spanish"],
+    "responseTime": "Within 2 hours",
+    "skills": [
+      {
+        "id": "web-development",
+        "name": "Web Development",
+        "proficiency": "Expert",
+        "validationState": "validated"
+      },
+      {
+        "id": "react-typescript",
+        "name": "React & TypeScript",
+        "proficiency": "Expert",
+        "validationState": "validated"
+      },
+      {
+        "id": "ui-ux-design",
+        "name": "UI/UX Design",
+        "proficiency": "Intermediate",
+        "validationState": "validated"
+      },
+      {
+        "id": "spanish-language",
+        "name": "Spanish Language",
+        "proficiency": "Beginner",
+        "validationState": "pending"
+      }
+    ],
+    "portfolio": {
+      "documents": [
+        {
+          "id": "resume",
+          "fileName": "Resume.pdf",
+          "uploadedAt": "2026-01-15"
+        }
+      ],
+      "links": [
+        {
+          "id": "portfolio-site",
+          "label": "portfolio.johndoe.com",
+          "href": "https://portfolio.johndoe.com"
+        },
+        {
+          "id": "linkedin",
+          "label": "linkedin.com/in/johndoe",
+          "href": "https://linkedin.com/in/johndoe"
+        },
+        {
+          "id": "github",
+          "label": "github.com/johndoe",
+          "href": "https://github.com/johndoe"
+        }
+      ]
+    },
+    "reviews": [
+      {
+        "author": "Sarah Chen",
+        "rating": 5,
+        "reviewedAt": "2026-03-01",
+        "text": "Excellent teacher! John explained React concepts very clearly and was patient with all my questions."
+      },
+      {
+        "author": "Marcus Johnson",
+        "rating": 5,
+        "reviewedAt": "2026-02-01",
+        "text": "Great session on TypeScript. Really helped me understand advanced types."
+      },
+      {
+        "author": "Lina Foster",
+        "rating": 5,
+        "reviewedAt": "2026-01-01",
+        "text": "Very supportive mentor. I left the session with a much clearer roadmap for my front-end learning."
+      }
+    ],
+    "avatarTheme": {
+      "from": "#d85317",
+      "to": "#ef7f27"
+    }
+  },
+  {
+    "id": "farah-benali",
+    "fullName": "Farah Benali",
+    "roleLabel": "Frontend Mentor",
+    "rating": 4.7,
+    "location": "Oran, Algeria",
+    "memberSince": "2025-09-01",
+    "credits": 24,
+    "about": "I help learners build polished front-end projects with strong UX foundations. I enjoy mentoring on design thinking, responsive layouts, and turning rough ideas into elegant interfaces.",
+    "languages": ["Arabic", "French", "English"],
+    "responseTime": "Within 45 minutes",
+    "skills": [
+      {
+        "id": "responsive-design",
+        "name": "Responsive Design",
+        "proficiency": "Expert",
+        "validationState": "validated"
+      },
+      {
+        "id": "figma-to-code",
+        "name": "Figma to Code",
+        "proficiency": "Expert",
+        "validationState": "validated"
+      },
+      {
+        "id": "css-architecture",
+        "name": "CSS Architecture",
+        "proficiency": "Intermediate",
+        "validationState": "pending"
+      }
+    ],
+    "portfolio": {
+      "documents": [
+        {
+          "id": "frontend-portfolio",
+          "fileName": "Farah-Portfolio.pdf",
+          "uploadedAt": "2025-11-03"
+        }
+      ],
+      "links": [
+        {
+          "id": "behance",
+          "label": "behance.net/farahbenali",
+          "href": "https://behance.net/farahbenali"
+        },
+        {
+          "id": "linkedin",
+          "label": "linkedin.com/in/farahbenali",
+          "href": "https://linkedin.com/in/farahbenali"
+        },
+        {
+          "id": "github",
+          "label": "github.com/farahbenali",
+          "href": "https://github.com/farahbenali"
+        }
+      ]
+    },
+    "reviews": [
+      {
+        "author": "Nora T.",
+        "rating": 4.9,
+        "reviewedAt": "2025-12-01",
+        "text": "Farah gives excellent visual feedback. My projects instantly looked more professional."
+      },
+      {
+        "author": "Yassine B.",
+        "rating": 4.6,
+        "reviewedAt": "2025-10-01",
+        "text": "Very fast responses and great eye for detail. The mentoring felt personal and actionable."
+      }
+    ],
+    "avatarTheme": {
+      "from": "#0e7a63",
+      "to": "#41b79a"
+    }
+  },
+  {
+    "id": "lucas-martin",
+    "fullName": "Lucas Martin",
+    "roleLabel": "Career Coach & Learner",
+    "rating": 4.8,
+    "location": "Lyon, France",
+    "memberSince": "2025-05-01",
+    "credits": 19,
+    "about": "I enjoy helping people present their skills better, prepare for interviews, and build confidence in public speaking. I am also learning product strategy through the FENNEKY community.",
+    "languages": ["French", "English"],
+    "responseTime": "Within 3 hours",
+    "skills": [
+      {
+        "id": "interview-prep",
+        "name": "Interview Prep",
+        "proficiency": "Expert",
+        "validationState": "validated"
+      },
+      {
+        "id": "public-speaking",
+        "name": "Public Speaking",
+        "proficiency": "Intermediate",
+        "validationState": "validated"
+      },
+      {
+        "id": "personal-branding",
+        "name": "Personal Branding",
+        "proficiency": "Intermediate",
+        "validationState": "pending"
+      }
+    ],
+    "portfolio": {
+      "documents": [
+        {
+          "id": "coach-cv",
+          "fileName": "Lucas-Martin-CV.pdf",
+          "uploadedAt": "2025-06-18"
+        }
+      ],
+      "links": [
+        {
+          "id": "website",
+          "label": "lucasmartin.co",
+          "href": "https://lucasmartin.co"
+        },
+        {
+          "id": "linkedin",
+          "label": "linkedin.com/in/lucasmartin",
+          "href": "https://linkedin.com/in/lucasmartin"
+        },
+        {
+          "id": "substack",
+          "label": "lucasmartin.substack.com",
+          "href": "https://lucasmartin.substack.com"
+        }
+      ]
+    },
+    "reviews": [
+      {
+        "author": "Sofia C.",
+        "rating": 4.8,
+        "reviewedAt": "2025-08-01",
+        "text": "Lucas helped me restructure my portfolio story and I felt much more prepared for interviews."
+      },
+      {
+        "author": "Adam L.",
+        "rating": 4.7,
+        "reviewedAt": "2025-07-01",
+        "text": "Great listener and strong coaching energy. The advice was specific and immediately useful."
+      }
+    ],
+    "avatarTheme": {
+      "from": "#3a5ef1",
+      "to": "#6a8bff"
+    }
+  }
+]

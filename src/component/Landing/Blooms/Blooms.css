@@ -1,0 +1,213 @@
+.blooms,
+.blooms *,
+.blooms *::before,
+.blooms *::after {
+  box-sizing: border-box;
+}
+
+.blooms {
+  padding: 84px 24px 96px;
+  background: #fff8e7;
+  font-family: "Geologica", sans-serif;
+}
+
+.blooms__heading {
+  text-align: center;
+}
+
+.blooms__heading h2 {
+  margin: 0;
+  color: #ff5a13;
+  font-size:48px;
+  line-height:100%;
+  letter-spacing: -0.05em;
+  font-weight: 600;
+  font-style: semibold;
+  font-family: Geologica, sans-serif;
+
+}
+
+.blooms__heading p {
+  margin: 16px 0 0;
+  color: #8b7d76;
+  font-size: 24px;
+  line-height: 1.14;
+  font-weight: 400;
+}
+
+.blooms__scene {
+  position: relative;
+  width: min(1160px, 100%);
+  min-height: 390px;
+  margin: 34px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "left . right"
+    ". center .";
+  row-gap: 34px;
+  align-items: start;
+}
+
+.bloom-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.bloom-card:hover {
+  transform: scale(1.05);
+  cursor: pointer;
+}
+
+.bloom-card--left {
+  grid-area: left;
+  justify-self: start;
+  margin-left: 14px;
+}
+
+.bloom-card--center {
+  grid-area: center;
+  justify-self: center;
+  margin-top: 4px;
+}
+
+.bloom-card--right {
+  grid-area: right;
+  justify-self: end;
+  margin-right: 12px;
+  
+}
+
+.bloom-card__icon {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+}
+
+.bloom-card__icon--idea {
+  background: #ffd7a5;
+  transform: rotate(9deg);
+}
+
+.bloom-card__icon--clock {
+  background: #d5dfb8;
+}
+
+.bloom-card__icon--donate {
+  background: #bfe8ff;
+  transform: rotate(-22deg);
+}
+
+.bloom-card__image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.bloom-card__icon--idea .bloom-card__image {
+  transform: rotate(-9deg);
+}
+
+.bloom-card__icon--donate .bloom-card__image {
+  transform: rotate(22deg);
+}
+
+.bloom-card h3 {
+  margin: 14px 0 0;
+  color: #4a4a4a;
+  font-family: "Geologica", sans-serif;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.blooms__connector {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.blooms__connector circle {
+  fill: #ff5a13;
+}
+
+.blooms__connector polyline {
+  fill: none;
+  stroke: #ff5a13;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.blooms__connector--left {
+  left: 250px;
+  top: 116px;
+  width: 260px;
+  height: 130px;
+}
+
+.blooms__connector--right {
+  right: 238px;
+  top: 146px;
+  width: 220px;
+  height: 180px;
+}
+
+@media (max-width: 1080px) {
+  .blooms__scene {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "left"
+      "center"
+      "right";
+    gap: 28px;
+    justify-items: center;
+  }
+
+  .bloom-card--left,
+  .bloom-card--center,
+  .bloom-card--right {
+    justify-self: center;
+    margin: 0;
+  }
+
+  .blooms__connector {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .blooms {
+    padding: 64px 18px 72px;
+  }
+
+  .blooms__heading p {
+    margin-top: 14px;
+    font-size: 1.14rem;
+  }
+
+  .bloom-card__icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 16px;
+  }
+
+  .bloom-card__image {
+    width: 36px;
+    height: 36px;
+  }
+
+  .bloom-card h3 {
+    margin-top: 12px;
+    font-size: 20px;
+  }
+}

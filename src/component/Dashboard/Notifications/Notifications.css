@@ -1,0 +1,238 @@
+.notifications-page,
+.notifications-page *,
+.notifications-page *::before,
+.notifications-page *::after {
+  box-sizing: border-box;
+}
+
+.notifications-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 38px;
+  background: #ffffff;
+  font-family: "Geologica", sans-serif;
+}
+
+.notifications-page__header h1 {
+  margin: 0;
+  color: #10213f;
+  font-size: clamp(1.8rem, 2.8vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.notifications-page__mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e25817;
+  font: inherit;
+  font-size: 0.98rem;
+  cursor: pointer;
+}
+
+.notifications-page__mark-all-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+}
+
+.notifications-page__mark-all-icon svg,
+.notifications-page__action-icon svg,
+.notifications-page__badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+.notifications-page {
+  min-height: calc(100vh - 92px);
+  background: linear-gradient(180deg, #fdf8f0 0%, #f7efe2 100%);
+  font-family: "Geologica", sans-serif;
+}
+
+.notifications-page__list {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 38px 20px 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notifications-page__card {
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(238, 228, 214, 0.95);
+  box-shadow: 0 8px 24px rgba(205, 187, 162, 0.06);
+}
+
+.notifications-page__card.is-unread {
+  background: linear-gradient(180deg, #fdf7e7 0%, #fbf2de 100%);
+  border: 2px solid #e46a23;
+  box-shadow: none;
+}
+
+.notifications-page__card-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 20px 20px 20px 18px;
+  align-items: flex-start;
+}
+
+.notifications-page__badge {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: linear-gradient(180deg, #ea741f 0%, #d85a18 100%);
+  flex-shrink: 0;
+}
+
+.notifications-page__copy {
+  min-width: 0;
+}
+
+.notifications-page__copy-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notifications-page__copy-topline h2 {
+  margin: 4px 0 10px;
+  color: #10213f;
+  font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.notifications-page__copy-topline span {
+  margin-top: 6px;
+  color: #8b3f12;
+  font-size: 0.96rem;
+  white-space: nowrap;
+}
+
+.notifications-page__copy p {
+  margin: 0;
+  color: #7b3510;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.notifications-page__actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.notifications-page__action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.96rem;
+  cursor: pointer;
+}
+
+.notifications-page__action--mark {
+  color: #e25817;
+}
+
+.notifications-page__action--delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6d2c0d;
+}
+
+.notifications-page__action-icon {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+}
+
+.notifications-page__empty {
+  padding: 42px 28px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(238, 228, 214, 0.95);
+  color: #7d6a57;
+  font-size: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .notifications-page__header {
+    padding: 18px 24px;
+  }
+
+  .notifications-page__list {
+    padding: 28px 18px 38px;
+  }
+
+  .notifications-page__card-main {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .notifications-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .notifications-page__header h1 {
+    font-size: 1.65rem;
+  }
+
+  .notifications-page__list {
+    padding: 20px 14px 28px;
+  }
+
+  .notifications-page__card {
+    border-radius: 20px;
+  }
+
+  .notifications-page__card-main {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .notifications-page__badge {
+    width: 56px;
+    height: 56px;
+    padding: 13px;
+  }
+
+  .notifications-page__copy-topline {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .notifications-page__copy-topline h2 {
+    margin-bottom: 2px;
+  }
+
+  .notifications-page__copy-topline span {
+    margin-top: 0;
+    white-space: normal;
+  }
+}

@@ -1,0 +1,33 @@
+.feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background-color: #FFF8E7;
+  min-height: 600px;
+}
+
+.feedback h2 {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ff5a13;
+  margin-bottom: 50px;
+  text-align: center;
+  font-family: "Geologica", sans-serif;
+}
+
+.feedback-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.feedbackImage {
+  width: 100%;
+  height: auto;
+  max-width: 900px;
+  object-fit: contain;
+}

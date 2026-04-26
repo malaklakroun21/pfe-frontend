@@ -1,0 +1,66 @@
+.skillscape {
+  background-color: #FFE0B8;
+  padding: 60px 40px;
+  text-align: center;
+}
+
+.skillscape h2 {
+  font-size: 2.4rem;
+  color: #ff5a13;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-family:"Geologica", sans-serif ;
+}
+
+.skillscape h2 span {
+  background-color: #F24E1E;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 0px;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.skillscape p {
+  font-size: 1rem;
+  color: #8b6f6f;
+  margin-bottom: 40px;
+  font-weight: 400;
+}
+
+.skillscape-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+  max-width: 100%;
+}
+.skillscape-grid  :hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+.skillscape-item {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.skillscape-icon {
+  max-width: 80%;
+  height: auto;
+  display: block;
+}
+
+.skillscape-item h3 {
+  margin-top: 0;
+  color: #ff5a13;
+}
+
+.skillscape-item p {
+  color: #555;
+}

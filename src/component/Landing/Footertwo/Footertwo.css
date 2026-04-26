@@ -1,0 +1,16 @@
+.footertwo {
+    background-color: rgba(235, 198, 163, 0.64);
+    color: rgba(33,32,32,1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Gentium Basic, serif;
+}
+.footertwo p {
+    font-size: 1.2rem;
+    margin: 0;
+    padding: 10px;
+   
+}
+
+

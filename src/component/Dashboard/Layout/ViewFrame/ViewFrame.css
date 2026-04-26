@@ -1,0 +1,17 @@
+.dashboard-view-frame__header {
+  width: calc(100% + var(--dashboard-sidebar-gap, 0px));
+  margin-left: calc(-1 * var(--dashboard-sidebar-gap, 0px));
+  border-bottom: 1px solid rgba(225, 216, 202, 0.9);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.dashboard-view-frame__content {
+  padding: 28px 32px 40px;
+}
+
+@media (max-width: 640px) {
+  .dashboard-view-frame__content {
+    padding: 20px 18px 28px;
+  }
+}

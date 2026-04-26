@@ -1,0 +1,121 @@
+.dashboard-sidebar {
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  width: 80%;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 30px 12px 36px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border-right: 1px solid rgba(227, 219, 206, 0.9);
+  font-family: "Geologica", sans-serif;
+  z-index: 5;
+}
+
+.dashboard-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  margin-bottom: 34px;
+  color: inherit;
+  text-decoration: none;
+  width: fit-content;
+  border-radius: 18px;
+}
+
+.dashboard-sidebar__brand:focus-visible {
+  outline: 3px solid rgba(235, 108, 45, 0.28);
+  outline-offset: 2px;
+}
+
+.dashboard-sidebar__brand-mark {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 50px;
+  border-radius: 16px;
+}
+
+.dashboard-sidebar__logo {
+  width: 90%;
+  height: auto;
+}
+
+.dashboard-sidebar__brand-name {
+  margin: 0;
+  color: #081a3f;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-sidebar__nav {
+  width: 100%;
+}
+
+.dashboard-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-sidebar__list-item + .dashboard-sidebar__list-item {
+  margin-top: 6px;
+}
+
+.dashboard-sidebar__item {
+  width: 85%;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 22px;
+  background: transparent;
+  color: #242833;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-sidebar__item:hover {
+  background-color: #f8f1e7;
+  transform: translateX(2px);
+}
+
+.dashboard-sidebar__item:focus-visible {
+  outline: 3px solid rgba(235, 108, 45, 0.28);
+  outline-offset: 2px;
+}
+
+.dashboard-sidebar__item.is-active {
+  background: #cf4f17;
+  color: #ffffff;
+  box-shadow: 0 16px 24px rgba(207, 79, 23, 0.24);
+}
+
+.dashboard-sidebar__icon {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.dashboard-sidebar__label {
+  font-size: 0.98rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .dashboard-sidebar {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid rgba(227, 219, 206, 0.9);
+  }
+}

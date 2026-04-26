@@ -1,0 +1,78 @@
+.header {
+  position: fixed;
+  top: 20px; /* petit espace du haut */
+  left: 50%;
+  transform: translateX(-50%); /* centrer horizontalement */
+  width: 75%; /* largeur réduite pour l’effet barre */
+  height: 9%;
+  background-color: #FFF8E7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 40px;
+  border-radius: 40px; /* arrondi fort pour l'effet "capsule" */
+  box-shadow: inset 0 10px 20px rgba(245, 85, 20, 0.4);
+  z-index: 1000
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-left img {
+  width: 80px;
+  height: auto;
+}
+
+.header-left h1 {
+  color: #BD482D;
+  font-size: 22px;
+  margin-top: 25px;
+}
+
+.header-right ul {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.header-right ul li a {
+  text-decoration: none;
+  color: #935D5D;
+  font-size: 18px;
+  font-family: "Geologica", sans-serif;
+  transition: all 0.3s ease;
+}
+
+.header-right ul li a.listHeader:hover {
+  
+  transform: translateY(-2px);
+}
+
+/* Bouton Login */
+.header-right ul li a.login {
+  background-color: #ff5a13;
+  color: #fff;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  transform: translateY(-10px);
+}
+
+.header-right ul li a.login:hover {
+  transform: scale(2);
+  transform: translateY(-10px);
+}
+
+
+
+
+
+
+

@@ -1,0 +1,46 @@
+.footer {
+    background-color: rgba(235, 198, 163, 0.64);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.footer-fenneky {
+    width: 25%;
+    height: 80%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-left: 3%;
+    
+}
+.footer-fenneky img {
+    width: 18%;
+    height: auto;
+
+}
+.footer-lists {
+    display: flex;
+    justify-content: space-around;
+    width: 70%;
+    height: 80%;
+}
+.titlefooter {
+    font-size: 16px;
+    color: rgba(242, 78, 30, 0.97);
+    margin-bottom: 10px;
+    font-style: bold;
+    font-weight: 700;
+    font-family: Gentium Basic, serif;
+}
+.listfooter {
+    font-size: 16px;
+    color: rgba(68,68,68,1);
+    font-weight: 400;
+    font-style: regular;
+    font-family: Gentium Basic, serif;   
+
+}

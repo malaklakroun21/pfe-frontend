@@ -1,0 +1,345 @@
+.sessions-page,
+.sessions-page *,
+.sessions-page *::before,
+.sessions-page *::after {
+  box-sizing: border-box;
+}
+
+.sessions-page {
+  margin: -28px -32px -40px calc(-32px - var(--dashboard-sidebar-gap, 0px));
+  min-height: calc(100vh - 90px);
+  background: linear-gradient(180deg, #fbf6ee 0%, #f8f0e5 100%);
+  color: #10213f;
+  font-family: "Geologica", sans-serif;
+}
+
+.sessions-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 38px;
+  background: #ffffff;
+}
+
+.sessions-page__header h1 {
+  margin: 0;
+  font-size: clamp(1.95rem, 2.8vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.sessions-page__notification-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #2d251d;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sessions-page__notification-button:hover {
+  background: rgba(243, 235, 224, 0.95);
+}
+
+.sessions-page__notification-button svg,
+.sessions-page__meta-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sessions-page__notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #d7652f;
+}
+
+.sessions-page__tabs {
+  background: #ffffff;
+  border-top: 1px solid rgba(235, 227, 214, 0.9);
+  border-bottom: 1px solid rgba(235, 227, 214, 0.9);
+}
+
+.sessions-page__tabs-inner,
+.sessions-page__content-inner {
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.sessions-page__tabs-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 38px;
+}
+
+.sessions-page__tab {
+  min-height: 74px;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #7a3412;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sessions-page__tab.is-active {
+  color: #ef651c;
+  border-bottom-color: #ef651c;
+}
+
+.sessions-page__content {
+  padding: 40px 0 56px;
+}
+
+.sessions-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sessions-page__card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  align-items: flex-start;
+  padding: 30px;
+  border: 1px solid rgba(240, 229, 214, 0.98);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 12px 26px rgba(205, 186, 162, 0.08);
+}
+
+.sessions-page__avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #de691f 0%, #cf4f17 100%);
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  flex-shrink: 0;
+}
+
+.sessions-page__body {
+  min-width: 0;
+}
+
+.sessions-page__topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.sessions-page__title-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sessions-page__title-group h2 {
+  margin: 0;
+  color: #10213f;
+  font-size: clamp(1.55rem, 2vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.sessions-page__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.sessions-page__badge--upcoming {
+  background: #d8f5de;
+  color: #009a4f;
+}
+
+.sessions-page__badge--pending {
+  background: #fff0cc;
+  color: #d47c00;
+}
+
+.sessions-page__badge--completed {
+  background: #e3efff;
+  color: #3464c3;
+}
+
+.sessions-page__badge--cancelled {
+  background: #ffe2dc;
+  color: #d34d29;
+}
+
+.sessions-page__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sessions-page__action {
+  min-width: 106px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sessions-page__action--ghost {
+  border: 1px solid #ff4f42;
+  background: #ffffff;
+  color: #ff3f35;
+}
+
+.sessions-page__action--ghost:hover {
+  border-color: #ee3f34;
+  transform: translateY(-1px);
+}
+
+.sessions-page__action--primary {
+  border: 0;
+  background: linear-gradient(180deg, #db651f 0%, #cd4f17 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 24px rgba(211, 93, 35, 0.18);
+}
+
+.sessions-page__action--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(211, 93, 35, 0.24);
+}
+
+.sessions-page__body > p {
+  margin: 10px 0 0;
+  color: #7b3510;
+  font-size: 1rem;
+}
+
+.sessions-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  margin-top: 26px;
+  color: #7a3412;
+  font-size: 1rem;
+}
+
+.sessions-page__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sessions-page__meta-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: #7a3412;
+  flex-shrink: 0;
+}
+
+.sessions-page__credits {
+  color: #e35f1d;
+  font-weight: 500;
+}
+
+@media (max-width: 1040px) {
+  .sessions-page__topline {
+    flex-direction: column;
+  }
+
+  .sessions-page__actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .sessions-page {
+    margin: -20px -18px -28px calc(-18px - var(--dashboard-sidebar-gap, 0px));
+  }
+
+  .sessions-page__header {
+    padding: 18px;
+  }
+
+  .sessions-page__header h1 {
+    font-size: 1.75rem;
+  }
+
+  .sessions-page__tabs-inner,
+  .sessions-page__content-inner {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .sessions-page__tabs-inner {
+    gap: 24px;
+  }
+
+  .sessions-page__tab {
+    min-height: 60px;
+    font-size: 0.98rem;
+  }
+
+  .sessions-page__content {
+    padding: 24px 0 34px;
+  }
+
+  .sessions-page__card {
+    grid-template-columns: 1fr;
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+
+  .sessions-page__avatar {
+    width: 68px;
+    height: 68px;
+    font-size: 1.5rem;
+  }
+
+  .sessions-page__actions {
+    flex-wrap: wrap;
+  }
+
+  .sessions-page__action {
+    flex: 1 1 150px;
+  }
+
+  .sessions-page__meta {
+    gap: 16px 22px;
+  }
+}
