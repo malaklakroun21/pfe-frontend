@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Header from "../Layout/Header/Header.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
+import { getPreviewUser } from "../../../previewSession.js";
 import "./DashboardHome.css";
 
 const stats = [
@@ -163,14 +164,32 @@ function StatIcon({ icon }) {
   }
 }
 
+function formatFirstName(fullName) {
+  if (typeof fullName !== "string" || fullName.trim().length === 0) {
+    return "John";
+  }
+
+  const [firstName] = fullName.trim().split(/\s+/);
+
+  return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+}
+
+function buildWelcomeMessage({ fullName, isNewUser }) {
+  const firstName = formatFirstName(fullName);
+
+  return isNewUser ? `Welcome, ${firstName}!` : `Welcome back, ${firstName}!`;
+}
+
 function DashboardHome() {
   const navigate = useNavigate();
+  const previewUser = getPreviewUser();
+  const welcomeMessage = buildWelcomeMessage(previewUser);
 
   return (
     <ViewFrame header={<Header />}>
       <section className="dashboard-home">
         <div className="dashboard-home__hero">
-          <h1>Welcome back, John!</h1>
+          <h1>{welcomeMessage}</h1>
           <p>You have 12 credits available</p>
         </div>
 

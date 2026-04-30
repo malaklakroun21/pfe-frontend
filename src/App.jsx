@@ -22,6 +22,7 @@ import Credits from './component/Dashboard/Credits/Credits.jsx'
 import Validation from './component/Dashboard/Validation/Validation.jsx'
 import Notifications from './component/Dashboard/Notifications/Notifications.jsx'
 import Settings from './component/Dashboard/Settings/Settings.jsx'
+import { getPreviewUser, hasPreviewSession, setPreviewSession } from './previewSession.js'
 
 function LandingPage() {
   return (
@@ -39,20 +40,16 @@ function LandingPage() {
   )
 }
 
-function setPreviewSession() {
-  window.sessionStorage.setItem('fenneky-preview-auth', 'true')
-}
-
-function hasPreviewSession() {
-  return window.sessionStorage.getItem('fenneky-preview-auth') === 'true'
-}
-
 function LoginPreviewPage() {
   const navigate = useNavigate()
 
   const handleSubmitCapture = (event) => {
     event.preventDefault()
-    setPreviewSession()
+    const previewUser = getPreviewUser()
+    setPreviewSession({
+      fullName: previewUser.fullName,
+      isNewUser: false,
+    })
     navigate('/app', { replace: true })
   }
 
@@ -68,7 +65,12 @@ function SignupPreviewPage() {
 
   const handleSubmitCapture = (event) => {
     event.preventDefault()
-    setPreviewSession()
+    const submittedName = event.target.elements.namedItem('full-name')?.value
+
+    setPreviewSession({
+      fullName: submittedName,
+      isNewUser: true,
+    })
     navigate('/app', { replace: true })
   }
 

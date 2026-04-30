@@ -6,15 +6,20 @@
 }
 
 .settings-page {
+  width: min(100%, 1120px);
+  min-width: 0;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 22px;
-  padding: 0;
+  padding: 38px 20px 52px;
   font-family: "Geologica", sans-serif;
 }
 
 .settings-page__card {
-  width: min(100%, 800px);
+  width: 100%;
+  max-width: 800px;
+  min-width: 0;
   margin: 0 auto;
   padding: 24px 26px 22px;
   border: 1px solid rgba(240, 229, 214, 0.95);
@@ -149,6 +154,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .settings-page__upload-input {
@@ -194,6 +200,7 @@
 .settings-page__upload-file-name {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   min-height: 44px;
   max-width: 100%;
   padding: 0 16px;
@@ -386,6 +393,7 @@
   color: #8b3a12;
   font-size: 0.85rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .settings-page__linked-action {
@@ -408,12 +416,13 @@
 }
 
 @media (max-width: 760px) {
-  .settings-page__card {
-    padding: 20px 16px 18px;
-  }
-
   .settings-page {
     gap: 18px;
+    padding: 20px 14px 28px;
+  }
+
+  .settings-page__card {
+    padding: 20px 16px 18px;
   }
 
   .settings-page__title {
