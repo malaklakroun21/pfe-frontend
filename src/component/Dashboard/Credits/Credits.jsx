@@ -1,31 +1,7 @@
+import { useEffect, useState } from "react";
+import { creditApi, userApi } from "../../../api/client.js";
+import { useAuthSession } from "../../../authSession.js";
 import "./Credits.css";
-
-const monthlyHighlights = [
-  {
-    id: "earned",
-    title: "This Month",
-    value: "+6",
-    caption: "Credits earned",
-    tone: "positive",
-    direction: "up",
-  },
-  {
-    id: "spent",
-    title: "This Month",
-    value: "-4",
-    caption: "Credits spent",
-    tone: "negative",
-    direction: "down",
-  },
-  {
-    id: "net",
-    title: "Net Change",
-    value: "+2",
-    caption: "This month",
-    tone: "accent",
-    direction: "up",
-  },
-];
 
 const earningTips = [
   {
@@ -54,32 +30,35 @@ const earningTips = [
   },
 ];
 
-const transactions = [
-  {
-    id: "react-session",
-    title: "Taught React Development to Alex Kim",
-    date: "Apr 8, 2026",
-    amount: "+1.5",
-    balance: "12",
-    tone: "positive",
-  },
-  {
-    id: "spanish-session",
-    title: "Learned Spanish from Sarah Chen",
-    date: "Apr 7, 2026",
-    amount: "-1",
-    balance: "10.5",
-    tone: "negative",
-  },
-  {
-    id: "web-session",
-    title: "Taught Web Development to Emma Wilson",
-    date: "Apr 5, 2026",
-    amount: "+1",
-    balance: "11.5",
-    tone: "positive",
-  },
-];
+function readNumericValue(value) {
+  return Number(value?.$numberDecimal ?? value?.toString?.() ?? value ?? 0);
+}
+
+function formatSignedAmount(amount, isPositive) {
+  return `${isPositive ? "+" : "-"}${amount}`;
+}
+
+function formatDateLabel(dateValue) {
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Unknown date";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(parsedDate);
+}
+
+function buildTransactionTitle(transaction, currentUserId) {
+  if (transaction.toUser === currentUserId) {
+    return `Credits received from ${transaction.fromUser}`;
+  }
+
+  return `Credits spent with ${transaction.toUser}`;
+}
 
 function CreditsBalanceIcon() {
   return (
@@ -212,8 +191,140 @@ function TransactionSignIcon({ tone }) {
 }
 
 function Credits() {
+  const { user } = useAuthSession();
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [monthlyHighlights, setMonthlyHighlights] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [totals, setTotals] = useState({ earned: 0, spent: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadCredits() {
+      if (!user?.userId) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const [history, currentUser] = await Promise.all([
+          creditApi.getHistory(),
+          userApi.getCurrentUser(),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        const balance = readNumericValue(currentUser?.timeCredits);
+        const historyItems = Array.isArray(history) ? history : [];
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        let totalEarned = 0;
+        let totalSpent = 0;
+        let monthEarned = 0;
+        let monthSpent = 0;
+        let rollingBalance = balance;
+
+        const mappedTransactions = historyItems.map((transaction, index) => {
+          const isPositive = transaction.toUser === user.userId;
+          const amount = Number(transaction.amount || 0);
+          const createdAt = new Date(transaction.createdAt);
+
+          if (isPositive) {
+            totalEarned += amount;
+          } else {
+            totalSpent += amount;
+          }
+
+          if (
+            !Number.isNaN(createdAt.getTime()) &&
+            createdAt.getMonth() === currentMonth &&
+            createdAt.getFullYear() === currentYear
+          ) {
+            if (isPositive) {
+              monthEarned += amount;
+            } else {
+              monthSpent += amount;
+            }
+          }
+
+          const balanceAfter = rollingBalance;
+          rollingBalance -= isPositive ? amount : -amount;
+
+          return {
+            id: transaction._id || `${transaction.sessionId}-${index}`,
+            title: buildTransactionTitle(transaction, user.userId),
+            date: formatDateLabel(transaction.createdAt),
+            amount: formatSignedAmount(amount, isPositive),
+            balance: balanceAfter,
+            tone: isPositive ? "positive" : "negative",
+          };
+        });
+
+        setCurrentBalance(balance);
+        setTotals({
+          earned: totalEarned,
+          spent: totalSpent,
+        });
+        setMonthlyHighlights([
+          {
+            id: "earned",
+            title: "This Month",
+            value: `+${monthEarned}`,
+            caption: "Credits earned",
+            tone: "positive",
+            direction: "up",
+          },
+          {
+            id: "spent",
+            title: "This Month",
+            value: `-${monthSpent}`,
+            caption: "Credits spent",
+            tone: "negative",
+            direction: "down",
+          },
+          {
+            id: "net",
+            title: "Net Change",
+            value: `${monthEarned - monthSpent >= 0 ? "+" : ""}${monthEarned - monthSpent}`,
+            caption: "This month",
+            tone: monthEarned - monthSpent >= 0 ? "accent" : "negative",
+            direction: monthEarned - monthSpent >= 0 ? "up" : "down",
+          },
+        ]);
+        setTransactions(mappedTransactions);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadCredits();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user?.userId]);
+
   return (
     <section className="credits-page">
+      {errorMessage ? <p>{errorMessage}</p> : null}
+
       <article className="credits-page__balance-card">
         <div className="credits-page__balance-topline">
           <span className="credits-page__balance-icon">
@@ -222,17 +333,17 @@ function Credits() {
           <span>Current Balance</span>
         </div>
 
-        <h2>12 Credits</h2>
+        <h2>{currentBalance} Credits</h2>
 
         <div className="credits-page__totals">
           <div className="credits-page__total">
             <span>Total Earned</span>
-            <strong>53</strong>
+            <strong>{totals.earned}</strong>
           </div>
 
           <div className="credits-page__total">
             <span>Total Spent</span>
-            <strong>41</strong>
+            <strong>{totals.spent}</strong>
           </div>
         </div>
       </article>
@@ -279,31 +390,37 @@ function Credits() {
         <h3 className="credits-page__section-title">Transaction History</h3>
 
         <div className="credits-page__history-list">
-          {transactions.map((transaction) => (
-            <article key={transaction.id} className="credits-page__history-card">
-              <div className="credits-page__history-main">
-                <span
-                  className={`credits-page__history-icon credits-page__history-icon--${transaction.tone}`}
-                >
-                  <TransactionSignIcon tone={transaction.tone} />
-                </span>
+          {isLoading ? (
+            <p>Loading credits...</p>
+          ) : transactions.length > 0 ? (
+            transactions.map((transaction) => (
+              <article key={transaction.id} className="credits-page__history-card">
+                <div className="credits-page__history-main">
+                  <span
+                    className={`credits-page__history-icon credits-page__history-icon--${transaction.tone}`}
+                  >
+                    <TransactionSignIcon tone={transaction.tone} />
+                  </span>
 
-                <div className="credits-page__history-copy">
-                  <h4>{transaction.title}</h4>
-                  <p>{transaction.date}</p>
+                  <div className="credits-page__history-copy">
+                    <h4>{transaction.title}</h4>
+                    <p>{transaction.date}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="credits-page__history-meta">
-                <strong
-                  className={`credits-page__history-amount credits-page__history-amount--${transaction.tone}`}
-                >
-                  {transaction.amount}
-                </strong>
-                <span>Balance: {transaction.balance}</span>
-              </div>
-            </article>
-          ))}
+                <div className="credits-page__history-meta">
+                  <strong
+                    className={`credits-page__history-amount credits-page__history-amount--${transaction.tone}`}
+                  >
+                    {transaction.amount}
+                  </strong>
+                  <span>Balance: {transaction.balance}</span>
+                </div>
+              </article>
+            ))
+          ) : (
+            <p>No credit transactions yet.</p>
+          )}
         </div>
       </section>
     </section>

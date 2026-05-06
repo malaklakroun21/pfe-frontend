@@ -1,77 +1,9 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { dashboardApi } from "../../../api/client.js";
 import Header from "../Layout/Header/Header.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
-import { getPreviewUser } from "../../../previewSession.js";
 import "./DashboardHome.css";
-
-const stats = [
-  {
-    id: "credits",
-    label: "Credits Balance",
-    value: "12",
-    note: "+3 this week",
-    icon: "credits",
-  },
-  {
-    id: "sessions",
-    label: "Sessions Completed",
-    value: "24",
-    note: "All time",
-    icon: "sessions",
-  },
-  {
-    id: "skills",
-    label: "Skills Listed",
-    value: "5",
-    note: "3 validated",
-    icon: "skills",
-  },
-  {
-    id: "validation",
-    label: "Validation Score",
-    value: "4.9",
-    note: "Excellent",
-    icon: "validation",
-  },
-];
-
-const upcomingSessions = [
-  {
-    id: "spanish-conversation",
-    initials: "SC",
-    title: "Spanish Conversation",
-    mentor: "Sarah Chen",
-    time: "Today, 3:00 PM",
-    duration: "1 hour",
-  },
-  {
-    id: "ui-review",
-    initials: "ER",
-    title: "UI Feedback Session",
-    mentor: "Elena Rodriguez",
-    time: "Tomorrow, 11:30 AM",
-    duration: "45 min",
-  },
-];
-
-const recommendedSkills = [
-  {
-    id: "react-development",
-    initials: "AK",
-    title: "React Development",
-    mentor: "Alex Kim",
-    rating: "4.9",
-    price: "1 credit/hr",
-  },
-  {
-    id: "photography-basics",
-    initials: "LM",
-    title: "Photography Basics",
-    mentor: "Leo Martin",
-    rating: "5",
-    price: "1 credit/hr",
-  },
-];
 
 function CreditsIcon() {
   return (
@@ -164,112 +96,154 @@ function StatIcon({ icon }) {
   }
 }
 
-function formatFirstName(fullName) {
-  if (typeof fullName !== "string" || fullName.trim().length === 0) {
-    return "John";
-  }
-
-  const [firstName] = fullName.trim().split(/\s+/);
-
-  return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-}
-
-function buildWelcomeMessage({ fullName, isNewUser }) {
-  const firstName = formatFirstName(fullName);
-
-  return isNewUser ? `Welcome, ${firstName}!` : `Welcome back, ${firstName}!`;
-}
-
 function DashboardHome() {
   const navigate = useNavigate();
-  const previewUser = getPreviewUser();
-  const welcomeMessage = buildWelcomeMessage(previewUser);
+  const [pageData, setPageData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadOverview() {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const overview = await dashboardApi.getOverview();
+
+        if (!isActive) {
+          return;
+        }
+
+        setPageData(overview);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadOverview();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const stats = pageData?.stats || [];
+  const upcomingSessions = pageData?.upcomingSessions || [];
+  const recommendedSkills = pageData?.recommendedSkills || [];
+  const welcomeName = pageData?.welcome?.firstName || "Member";
+  const creditsAvailable = pageData?.creditsAvailable ?? 0;
 
   return (
     <ViewFrame header={<Header />}>
       <section className="dashboard-home">
         <div className="dashboard-home__hero">
-          <h1>{welcomeMessage}</h1>
-          <p>You have 12 credits available</p>
+          <h1>Welcome back, {welcomeName}!</h1>
+          <p>You have {creditsAvailable} credits available</p>
         </div>
 
-        <div className="dashboard-home__stats">
-          {stats.map((stat) => (
-            <article key={stat.id} className="dashboard-home__stat-card">
-              <div className="dashboard-home__stat-topline">
-                <span>{stat.label}</span>
-                <span className="dashboard-home__stat-icon">
-                  <StatIcon icon={stat.icon} />
-                </span>
-              </div>
+        {errorMessage ? <p>{errorMessage}</p> : null}
 
-              <strong>{stat.value}</strong>
-              <p>{stat.note}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="dashboard-home__content-grid">
-          <section className="dashboard-home__panel">
-            <div className="dashboard-home__panel-header">
-              <h2>Upcoming Sessions</h2>
-              <button type="button" onClick={() => navigate("/app/sessions")}>
-                View all
-              </button>
-            </div>
-
-            <div className="dashboard-home__session-list">
-              {upcomingSessions.map((session) => (
-                <article key={session.id} className="dashboard-home__session-card">
-                  <div className="dashboard-home__avatar">{session.initials}</div>
-
-                  <div className="dashboard-home__session-copy">
-                    <h3>{session.title}</h3>
-                    <p>with {session.mentor}</p>
-                    <span>
-                      {session.time}
-                      <i aria-hidden="true" />
-                      {session.duration}
+        {isLoading ? (
+          <p>Loading dashboard...</p>
+        ) : (
+          <>
+            <div className="dashboard-home__stats">
+              {stats.map((stat) => (
+                <article key={stat.id} className="dashboard-home__stat-card">
+                  <div className="dashboard-home__stat-topline">
+                    <span>{stat.label}</span>
+                    <span className="dashboard-home__stat-icon">
+                      <StatIcon icon={stat.icon} />
                     </span>
                   </div>
+
+                  <strong>{stat.value}</strong>
+                  <p>{stat.note}</p>
                 </article>
               ))}
             </div>
-          </section>
 
-          <section className="dashboard-home__panel">
-            <div className="dashboard-home__panel-header">
-              <h2>Recommended Skills to Learn</h2>
-              <button type="button" onClick={() => navigate("/app/explore")}>
-                Explore more
-              </button>
+            <div className="dashboard-home__content-grid">
+              <section className="dashboard-home__panel">
+                <div className="dashboard-home__panel-header">
+                  <h2>Upcoming Sessions</h2>
+                  <button type="button" onClick={() => navigate("/app/sessions")}>
+                    View all
+                  </button>
+                </div>
+
+                <div className="dashboard-home__session-list">
+                  {upcomingSessions.length > 0 ? (
+                    upcomingSessions.map((session) => (
+                      <article key={session.id} className="dashboard-home__session-card">
+                        <div className="dashboard-home__avatar">{session.initials}</div>
+
+                        <div className="dashboard-home__session-copy">
+                          <h3>{session.title}</h3>
+                          <p>with {session.mentor}</p>
+                          <span>
+                            {session.time}
+                            <i aria-hidden="true" />
+                            {session.duration}
+                          </span>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p>No upcoming sessions yet.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="dashboard-home__panel">
+                <div className="dashboard-home__panel-header">
+                  <h2>Recommended Skills to Learn</h2>
+                  <button type="button" onClick={() => navigate("/app/explore")}>
+                    Explore more
+                  </button>
+                </div>
+
+                <div className="dashboard-home__recommendation-list">
+                  {recommendedSkills.length > 0 ? (
+                    recommendedSkills.map((skill) => (
+                      <article key={skill.id} className="dashboard-home__recommendation-card">
+                        <div className="dashboard-home__avatar">{skill.initials}</div>
+
+                        <div className="dashboard-home__recommendation-copy">
+                          <h3>{skill.title}</h3>
+                          <p>{skill.mentor}</p>
+                        </div>
+
+                        <div className="dashboard-home__recommendation-meta">
+                          <div className="dashboard-home__rating">
+                            <span className="dashboard-home__rating-icon">
+                              <StarIcon />
+                            </span>
+                            <strong>{skill.rating}</strong>
+                          </div>
+
+                          <span>{skill.price}</span>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p>No recommendations available yet.</p>
+                  )}
+                </div>
+              </section>
             </div>
-
-            <div className="dashboard-home__recommendation-list">
-              {recommendedSkills.map((skill) => (
-                <article key={skill.id} className="dashboard-home__recommendation-card">
-                  <div className="dashboard-home__avatar">{skill.initials}</div>
-
-                  <div className="dashboard-home__recommendation-copy">
-                    <h3>{skill.title}</h3>
-                    <p>{skill.mentor}</p>
-                  </div>
-
-                  <div className="dashboard-home__recommendation-meta">
-                    <div className="dashboard-home__rating">
-                      <span className="dashboard-home__rating-icon">
-                        <StarIcon />
-                      </span>
-                      <strong>{skill.rating}</strong>
-                    </div>
-
-                    <span>{skill.price}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        </div>
+          </>
+        )}
       </section>
     </ViewFrame>
   );

@@ -103,6 +103,8 @@ function buildPortfolioViewModel(portfolio) {
         id: document.id ?? document.fileName,
         fileName: document.fileName ?? "Document.pdf",
         uploadedLabel: formatFullDate(document.uploadedAt),
+        href: document.href ?? "",
+        downloadName: document.fileName ?? "Document.pdf",
       }))
     : [];
 
@@ -143,7 +145,7 @@ function hasSectionContent(sectionKey, { skills, portfolio, reviews }) {
     case "portfolio":
       return portfolio.documents.length > 0 || portfolio.links.length > 0;
     case "reviews":
-      return reviews.length > 0;
+      return true;
     default:
       return false;
   }

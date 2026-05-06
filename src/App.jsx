@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import './App.css'
 import Header from './component/Landing/Header/Header.jsx'
@@ -22,7 +23,14 @@ import Credits from './component/Dashboard/Credits/Credits.jsx'
 import Validation from './component/Dashboard/Validation/Validation.jsx'
 import Notifications from './component/Dashboard/Notifications/Notifications.jsx'
 import Settings from './component/Dashboard/Settings/Settings.jsx'
-import { getPreviewUser, hasPreviewSession, setPreviewSession } from './previewSession.js'
+import { authApi, userApi } from './api/client.js'
+import {
+  clearAuthSession,
+  hasAuthSession,
+  setAuthSession,
+  updateAuthUser,
+  useAuthSession,
+} from './authSession.js'
 
 function LandingPage() {
   return (
@@ -40,49 +48,122 @@ function LandingPage() {
   )
 }
 
-function LoginPreviewPage() {
-  const navigate = useNavigate()
+function splitFullName(fullName = "") {
+  const normalizedName = fullName.trim().replace(/\s+/g, " ");
+  const [firstName = "", ...rest] = normalizedName.split(" ");
 
-  const handleSubmitCapture = (event) => {
+  return {
+    firstName,
+    lastName: rest.join(" "),
+  };
+}
+
+function LoginPage() {
+  const navigate = useNavigate()
+  const { accessToken } = useAuthSession()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+
+  if (accessToken) {
+    return <Navigate to="/app" replace />
+  }
+
+  const handleSubmitCapture = async (event) => {
     event.preventDefault()
-    const previewUser = getPreviewUser()
-    setPreviewSession({
-      fullName: previewUser.fullName,
-      isNewUser: false,
-    })
-    navigate('/app', { replace: true })
+    setErrorMessage("")
+
+    const email = event.target.elements.namedItem("email")?.value?.trim()
+    const password = event.target.elements.namedItem("password")?.value || ""
+
+    if (!email || !password) {
+      setErrorMessage("Veuillez saisir votre email et votre mot de passe.")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const session = await authApi.login({
+        email,
+        password,
+      })
+
+      setAuthSession(session)
+      navigate('/app', { replace: true })
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div onSubmitCapture={handleSubmitCapture}>
-      <Login />
+      <Login isSubmitting={isSubmitting} errorMessage={errorMessage} />
     </div>
   )
 }
 
-function SignupPreviewPage() {
+function SignupPage() {
   const navigate = useNavigate()
+  const { accessToken } = useAuthSession()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
-  const handleSubmitCapture = (event) => {
+  if (accessToken) {
+    return <Navigate to="/app" replace />
+  }
+
+  const handleSubmitCapture = async (event) => {
     event.preventDefault()
-    const submittedName = event.target.elements.namedItem('full-name')?.value
+    setErrorMessage("")
 
-    setPreviewSession({
-      fullName: submittedName,
-      isNewUser: true,
-    })
-    navigate('/app', { replace: true })
+    const fullName = event.target.elements.namedItem("full-name")?.value?.trim() || ""
+    const email = event.target.elements.namedItem("email")?.value?.trim()
+    const password = event.target.elements.namedItem("password")?.value || ""
+    const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setErrorMessage("Veuillez remplir tous les champs du formulaire.")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Les mots de passe ne correspondent pas.")
+      return
+    }
+
+    const { firstName, lastName } = splitFullName(fullName)
+
+    setIsSubmitting(true)
+
+    try {
+      const session = await authApi.register({
+        firstName,
+        lastName,
+        email,
+        password,
+        role: "LEARNER",
+      })
+
+      setAuthSession(session)
+      navigate('/app', { replace: true })
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div onSubmitCapture={handleSubmitCapture}>
-      <Sign />
+      <Sign isSubmitting={isSubmitting} errorMessage={errorMessage} />
     </div>
   )
 }
 
-function PreviewAppRoute() {
-  if (!hasPreviewSession()) {
+function ProtectedAppRoute() {
+  if (!hasAuthSession()) {
     return <Navigate to="/login" replace />
   }
 
@@ -90,12 +171,46 @@ function PreviewAppRoute() {
 }
 
 const App = () => {
+  const { accessToken } = useAuthSession()
+
+  useEffect(() => {
+    let isActive = true
+
+    async function refreshCurrentUser() {
+      if (!accessToken) {
+        return
+      }
+
+      try {
+        const currentUser = await userApi.getCurrentUser()
+
+        if (!isActive) {
+          return
+        }
+
+        updateAuthUser(currentUser)
+      } catch {
+        if (!isActive) {
+          return
+        }
+
+        clearAuthSession()
+      }
+    }
+
+    refreshCurrentUser()
+
+    return () => {
+      isActive = false
+    }
+  }, [accessToken])
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPreviewPage />} />
-      <Route path="/signup" element={<SignupPreviewPage />} />
-      <Route path="/app" element={<PreviewAppRoute />}>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/app" element={<ProtectedAppRoute />}>
         <Route index element={<DashboardHome />} />
         <Route element={<SharedHeaderLayout />}>
           <Route path="skills" element={<MyProfile />} />

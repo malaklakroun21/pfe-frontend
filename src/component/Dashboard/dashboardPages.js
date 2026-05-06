@@ -17,8 +17,7 @@ export const dashboardSections = {
     navLabel: "Dashboard",
     icon: "dashboard",
     title: "Dashboard overview",
-    subtitle:
-      "This is a frontend-only preview of your internal app. Later, the real data can come from your backend and database.",
+    subtitle: "Follow your activity, your learning progress, and the latest platform updates.",
     stats: [
       { label: "Credits available", value: "24h", accent: "warm" },
       { label: "Sessions this week", value: "03", accent: "soft" },

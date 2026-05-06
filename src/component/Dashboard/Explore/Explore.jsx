@@ -1,83 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { dashboardApi } from "../../../api/client.js";
 import { useNotificationsState } from "../Notifications/notificationsStore.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./Explore.css";
-
-const categories = [
-  "All",
-  "Technology",
-  "Design",
-  "Languages",
-  "Music",
-  "Business",
-  "Art",
-  "Fitness",
-  "Cooking",
-];
-
-const mentorDirectory = [
-  {
-    id: "sarah-chen",
-    initials: "SC",
-    name: "Sarah Chen",
-    category: "Languages",
-    rating: "5",
-    reviews: 24,
-    skills: ["Spanish", "Mandarin", "French"],
-    price: "1 credit/hr",
-  },
-  {
-    id: "marcus-johnson",
-    initials: "MJ",
-    name: "Marcus Johnson",
-    category: "Music",
-    rating: "4.9",
-    reviews: 18,
-    skills: ["Guitar", "Piano", "Music Theory"],
-    price: "1 credit/hr",
-  },
-  {
-    id: "elena-rodriguez",
-    initials: "ER",
-    name: "Elena Rodriguez",
-    category: "Design",
-    rating: "5",
-    reviews: 31,
-    skills: ["UI/UX Design", "Figma", "Design Systems"],
-    price: "1 credit/hr",
-  },
-  {
-    id: "noah-patel",
-    initials: "NP",
-    name: "Noah Patel",
-    category: "Technology",
-    rating: "4.8",
-    reviews: 16,
-    skills: ["React", "JavaScript", "Product Thinking"],
-    price: "1 credit/hr",
-  },
-  {
-    id: "amina-haddad",
-    initials: "AH",
-    name: "Amina Haddad",
-    category: "Business",
-    rating: "4.9",
-    reviews: 22,
-    skills: ["Branding", "Negotiation", "Public Speaking"],
-    price: "1 credit/hr",
-  },
-  {
-    id: "leo-martin",
-    initials: "LM",
-    name: "Leo Martin",
-    category: "Art",
-    rating: "4.8",
-    reviews: 15,
-    skills: ["Illustration", "Color Theory", "Sketching"],
-    price: "1 credit/hr",
-  },
-];
 
 function SearchIcon() {
   return (
@@ -140,6 +66,46 @@ function Explore() {
   const { unreadCount } = useNotificationsState();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [categories, setCategories] = useState(["All"]);
+  const [mentorDirectory, setMentorDirectory] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadExploreDirectory() {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const directory = await dashboardApi.getExploreDirectory();
+
+        if (!isActive) {
+          return;
+        }
+
+        setCategories(Array.isArray(directory?.categories) ? directory.categories : ["All"]);
+        setMentorDirectory(Array.isArray(directory?.mentors) ? directory.mentors : []);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadExploreDirectory();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredMentors = mentorDirectory.filter((mentor) => {
@@ -238,11 +204,14 @@ function Explore() {
 
         <div className="explore-page__results">
           <div className="explore-page__inner">
+            {errorMessage ? <p>{errorMessage}</p> : null}
             <p className="explore-page__results-count">
               {filteredMentors.length} mentor{filteredMentors.length === 1 ? "" : "s"} found
             </p>
 
-            {filteredMentors.length > 0 ? (
+            {isLoading ? (
+              <div className="explore-page__empty">Loading mentors...</div>
+            ) : filteredMentors.length > 0 ? (
               <div className="explore-page__grid">
                 {filteredMentors.map((mentor) => (
                   <article key={mentor.id} className="explore-page__card">

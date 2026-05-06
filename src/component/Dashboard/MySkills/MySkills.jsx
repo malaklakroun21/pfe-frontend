@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { dashboardApi } from "../../../api/client.js";
 import "./MySkills.css";
-import profilePreviewData from "./profilePreviewData.json";
-import { buildProfileViewModel, getProfileRecordById } from "./profileViewModel.js";
+import { buildProfileViewModel } from "./profileViewModel.js";
 
 function LocationIcon() {
   return (
@@ -133,18 +133,36 @@ function PortfolioTab({ profile }) {
           <h3>Documents</h3>
 
           <div className="my-profile-page__document-list">
-            {profile.portfolio.documents.map((document) => (
-              <div key={document.id} className="my-profile-page__document-row">
-                <div className="my-profile-page__document-icon">
-                  <DocumentIcon />
-                </div>
+            {profile.portfolio.documents.map((document) =>
+              document.href ? (
+                <a
+                  key={document.id}
+                  href={document.href}
+                  download={document.downloadName}
+                  className="my-profile-page__document-row"
+                >
+                  <div className="my-profile-page__document-icon">
+                    <DocumentIcon />
+                  </div>
 
-                <div className="my-profile-page__document-copy">
-                  <strong>{document.fileName}</strong>
-                  <span>Uploaded {document.uploadedLabel}</span>
+                  <div className="my-profile-page__document-copy">
+                    <strong>{document.fileName}</strong>
+                    <span>Uploaded {document.uploadedLabel}</span>
+                  </div>
+                </a>
+              ) : (
+                <div key={document.id} className="my-profile-page__document-row">
+                  <div className="my-profile-page__document-icon">
+                    <DocumentIcon />
+                  </div>
+
+                  <div className="my-profile-page__document-copy">
+                    <strong>{document.fileName}</strong>
+                    <span>Uploaded {document.uploadedLabel}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </article>
       ) : null}
@@ -174,6 +192,15 @@ function PortfolioTab({ profile }) {
 }
 
 function ReviewsTab({ profile }) {
+  if (profile.reviews.length === 0) {
+    return (
+      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+        <h3>Reviews</h3>
+        <p>Aucun review jusqu'a maintenant.</p>
+      </article>
+    );
+  }
+
   return (
     <>
       {profile.reviews.map((review) => (
@@ -222,13 +249,57 @@ function ProfileContent({ profile, activeTabKey }) {
   }
 }
 
-function MyProfile({ profiles = profilePreviewData, currentUserId = "john-doe" }) {
+function MyProfile() {
   const navigate = useNavigate();
-  const profileRecords = Array.isArray(profiles) && profiles.length > 0 ? profiles : profilePreviewData;
   const [activeTabKey, setActiveTabKey] = useState("about");
-  const activeProfile = buildProfileViewModel(
-    getProfileRecordById(profileRecords, currentUserId),
-  );
+  const [profileRecord, setProfileRecord] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadProfile() {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const profile = await dashboardApi.getProfile();
+
+        if (!isActive) {
+          return;
+        }
+
+        setProfileRecord(profile);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const activeProfile = buildProfileViewModel(profileRecord);
+
+  if (isLoading) {
+    return <p>Loading profile...</p>;
+  }
+
+  if (errorMessage) {
+    return <p>{errorMessage}</p>;
+  }
 
   if (!activeProfile) {
     return null;

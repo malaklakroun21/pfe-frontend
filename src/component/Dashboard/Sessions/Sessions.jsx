@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { sessionApi } from "../../../api/client.js";
+import { useAuthSession } from "../../../authSession.js";
 import { useNotificationsState } from "../Notifications/notificationsStore.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./Sessions.css";
@@ -11,80 +13,86 @@ const sessionTabs = [
   { key: "cancelled", label: "Cancelled" },
 ];
 
-const sessionItems = [
-  {
-    id: "spanish-conversation",
-    initials: "SC",
-    title: "Spanish Conversation",
-    mentor: "Sarah Chen",
-    date: "Apr 11, 2026",
-    time: "3:00 PM",
-    duration: "1 hour",
-    credits: "1 credits",
-    status: "upcoming",
+const sessionStatusMap = {
+  ACCEPTED: {
+    tabKey: "upcoming",
     badge: "Confirmed",
   },
-  {
-    id: "guitar-basics",
-    initials: "MJ",
-    title: "Guitar Basics",
-    mentor: "Marcus Johnson",
-    date: "Apr 12, 2026",
-    time: "10:00 AM",
-    duration: "1.5 hours",
-    credits: "1.5 credits",
-    status: "upcoming",
-    badge: "Confirmed",
-  },
-  {
-    id: "react-mentoring",
-    initials: "AK",
-    title: "React Mentoring",
-    mentor: "Alex Kim",
-    date: "Apr 14, 2026",
-    time: "1:30 PM",
-    duration: "1 hour",
-    credits: "1 credits",
-    status: "pending",
+  PENDING: {
+    tabKey: "pending",
     badge: "Pending",
   },
-  {
-    id: "ui-review",
-    initials: "ER",
-    title: "UI Review Session",
-    mentor: "Elena Rodriguez",
-    date: "Apr 08, 2026",
-    time: "4:00 PM",
-    duration: "1 hour",
-    credits: "1 credits",
-    status: "completed",
+  COMPLETED: {
+    tabKey: "completed",
     badge: "Completed",
   },
-  {
-    id: "brand-strategy",
-    initials: "AH",
-    title: "Brand Strategy",
-    mentor: "Amina Haddad",
-    date: "Apr 05, 2026",
-    time: "2:00 PM",
-    duration: "1.5 hours",
-    credits: "1.5 credits",
-    status: "completed",
-    badge: "Completed",
-  },
-  {
-    id: "illustration-intro",
-    initials: "LM",
-    title: "Illustration Intro",
-    mentor: "Leo Martin",
-    date: "Apr 03, 2026",
-    time: "11:00 AM",
-    duration: "45 min",
-    credits: "0.5 credits",
-    status: "cancelled",
+  REJECTED: {
+    tabKey: "cancelled",
     badge: "Cancelled",
   },
-];
+};
+
+function buildFullName(user) {
+  return [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.userId || "Unknown";
+}
+
+function buildInitials(user) {
+  const fullName = buildFullName(user);
+  const parts = fullName.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "??";
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function formatDateLabel(dateValue) {
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Date not available";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(parsedDate);
+}
+
+function formatTimeLabel(dateValue) {
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Time not available";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsedDate);
+}
+
+function formatDurationLabel(duration) {
+  if (!duration) {
+    return "Not specified";
+  }
+
+  return duration === 1 ? "1 hour" : `${duration} hours`;
+}
+
+function formatCreditLabel(credits) {
+  if (!credits) {
+    return "0 credits";
+  }
+
+  return `${credits} credits`;
+}
 
 function BellIcon() {
   return (
@@ -151,8 +159,71 @@ function PersonIcon() {
 
 function Sessions() {
   const navigate = useNavigate();
+  const { user } = useAuthSession();
   const { unreadCount } = useNotificationsState();
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [sessionItems, setSessionItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadSessions() {
+      if (!user?.userId) {
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const sessions = await sessionApi.list();
+
+        if (!isActive) {
+          return;
+        }
+
+        const mappedSessions = (Array.isArray(sessions) ? sessions : []).map((session) => {
+          const statusConfig = sessionStatusMap[session.status] || sessionStatusMap.PENDING;
+          const isTeacher = session.teacherId === user?.userId;
+          const otherParticipant = isTeacher ? session.learner : session.teacher;
+
+          return {
+            id: session.sessionId,
+            participantUserId: otherParticipant?.userId || "",
+            initials: buildInitials(otherParticipant),
+            title: session.skill,
+            mentor: buildFullName(otherParticipant),
+            date: formatDateLabel(session.date),
+            time: formatTimeLabel(session.date),
+            duration: formatDurationLabel(session.actualDuration || session.duration),
+            credits: formatCreditLabel(session.chargedCredits || session.duration),
+            status: statusConfig.tabKey,
+            badge: statusConfig.badge,
+          };
+        });
+
+        setSessionItems(mappedSessions);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSessions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user?.userId]);
 
   const tabCounts = useMemo(
     () =>
@@ -160,7 +231,7 @@ function Sessions() {
         counts[tab.key] = sessionItems.filter((item) => item.status === tab.key).length;
         return counts;
       }, {}),
-    []
+    [sessionItems]
   );
 
   const filteredSessions = sessionItems.filter((item) => item.status === activeTab);
@@ -207,77 +278,84 @@ function Sessions() {
         </div>
 
         <div className="sessions-page__content">
-          <div className="sessions-page__content-inner">
-            <div className="sessions-page__list">
-              {filteredSessions.map((session) => (
-                <article key={session.id} className="sessions-page__card">
-                  <div className="sessions-page__avatar">{session.initials}</div>
+            <div className="sessions-page__content-inner">
+              {errorMessage ? <p>{errorMessage}</p> : null}
+              <div className="sessions-page__list">
+                {isLoading ? (
+                  <p>Loading sessions...</p>
+                ) : filteredSessions.length > 0 ? (
+                  filteredSessions.map((session) => (
+                    <article key={session.id} className="sessions-page__card">
+                      <div className="sessions-page__avatar">{session.initials}</div>
 
-                  <div className="sessions-page__body">
-                    <div className="sessions-page__topline">
-                      <div className="sessions-page__title-group">
-                        <h2>{session.title}</h2>
-                        <span
-                          className={`sessions-page__badge sessions-page__badge--${session.status}`}
-                        >
-                          {session.badge}
-                        </span>
+                      <div className="sessions-page__body">
+                        <div className="sessions-page__topline">
+                          <div className="sessions-page__title-group">
+                            <h2>{session.title}</h2>
+                            <span
+                              className={`sessions-page__badge sessions-page__badge--${session.status}`}
+                            >
+                              {session.badge}
+                            </span>
+                          </div>
+
+                          <div className="sessions-page__actions">
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--ghost"
+                            >
+                              {session.status === "completed" ? "Review" : "Cancel"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--primary"
+                              onClick={() => {
+                                if (session.participantUserId) {
+                                  navigate("/app/messages");
+                                }
+                              }}
+                            >
+                              {session.status === "completed" ? "Book Again" : "Message"}
+                            </button>
+                          </div>
+                        </div>
+
+                        <p>with {session.mentor}</p>
+
+                        <div className="sessions-page__meta">
+                          <span className="sessions-page__meta-item">
+                            <span className="sessions-page__meta-icon">
+                              <CalendarIcon />
+                            </span>
+                            <span>{session.date}</span>
+                          </span>
+
+                          <span className="sessions-page__meta-item">
+                            <span className="sessions-page__meta-icon">
+                              <ClockIcon />
+                            </span>
+                            <span>{session.time}</span>
+                          </span>
+
+                          <span className="sessions-page__meta-item">
+                            <span className="sessions-page__meta-icon">
+                              <PersonIcon />
+                            </span>
+                            <span>{session.duration}</span>
+                          </span>
+
+                          <span className="sessions-page__credits">{session.credits}</span>
+                        </div>
                       </div>
-
-                      <div className="sessions-page__actions">
-                        <button
-                          type="button"
-                          className="sessions-page__action sessions-page__action--ghost"
-                        >
-                          {session.status === "completed" ? "Review" : "Cancel"}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="sessions-page__action sessions-page__action--primary"
-                          onClick={() => {
-                            if (session.status !== "completed") {
-                              navigate("/app/messages");
-                            }
-                          }}
-                        >
-                          {session.status === "completed" ? "Book Again" : "Message"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <p>with {session.mentor}</p>
-
-                    <div className="sessions-page__meta">
-                      <span className="sessions-page__meta-item">
-                        <span className="sessions-page__meta-icon">
-                          <CalendarIcon />
-                        </span>
-                        <span>{session.date}</span>
-                      </span>
-
-                      <span className="sessions-page__meta-item">
-                        <span className="sessions-page__meta-icon">
-                          <ClockIcon />
-                        </span>
-                        <span>{session.time}</span>
-                      </span>
-
-                      <span className="sessions-page__meta-item">
-                        <span className="sessions-page__meta-icon">
-                          <PersonIcon />
-                        </span>
-                        <span>{session.duration}</span>
-                      </span>
-
-                      <span className="sessions-page__credits">{session.credits}</span>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                    </article>
+                  ))
+                ) : (
+                  <p>No sessions found in this tab.</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
       </section>
     </ViewFrame>
   );

@@ -7,6 +7,21 @@ import {
 } from "./notificationsStore.js";
 import "./Notifications.css";
 
+function formatNotificationTime(dateValue) {
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Recently";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsedDate);
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,7 +148,7 @@ function NotificationBadgeIcon({ type }) {
 }
 
 function Notifications() {
-  const { notifications } = useNotificationsState();
+  const { notifications, isLoading, errorMessage } = useNotificationsState();
 
   return (
     <ViewFrame
@@ -156,7 +171,11 @@ function Notifications() {
     >
       <section className="notifications-page">
         <div className="notifications-page__list">
-          {notifications.length > 0 ? (
+          {errorMessage ? <p>{errorMessage}</p> : null}
+
+          {isLoading ? (
+            <div className="notifications-page__empty">Loading notifications...</div>
+          ) : notifications.length > 0 ? (
             notifications.map((notification) => (
               <article
                 key={notification.id}
@@ -172,7 +191,7 @@ function Notifications() {
                   <div className="notifications-page__copy">
                     <div className="notifications-page__copy-topline">
                       <h2>{notification.title}</h2>
-                      <span>{notification.time}</span>
+                      <span>{formatNotificationTime(notification.createdAt)}</span>
                     </div>
 
                     <p>{notification.message}</p>

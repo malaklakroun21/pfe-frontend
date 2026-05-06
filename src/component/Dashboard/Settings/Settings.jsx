@@ -1,13 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { userApi } from "../../../api/client.js";
+import { updateAuthUser } from "../../../authSession.js";
 import "./Settings.css";
 
 const initialFormValues = {
-  fullName: "John Doe",
-  email: "john.doe@example.com",
+  fullName: "",
+  email: "",
   photo: null,
-  bio: "Passionate about technology and education. I love teaching web development and learning new languages.",
-  location: "San Francisco, CA",
-  languages: "English, Spanish",
+  bio: "",
+  portfolioUrl: "",
+  cityId: "",
+  resumeFile: null,
+  resumeFileName: "",
+  resumeDownloadUrl: "",
+  resumeUploadedAt: "",
+  removeResume: false,
+  languages: "",
 };
 
 const initialPasswordValues = {
@@ -23,14 +31,13 @@ const initialPreferences = {
   messageNotifications: true,
 };
 
-const initialLinkedAccounts = [
-  {
-    id: "google",
-    provider: "Google",
-    email: "john.doe@gmail.com",
-    connected: true,
-  },
-];
+const initialLinkedAccounts = [];
+const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_RESUME_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
 
 function getInitials(name) {
   return name
@@ -39,6 +46,44 @@ function getInitials(name) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+function ResumeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M7 3.75h6.55L18 8.2V20.25a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.75a1 1 0 0 1 1-1Z" />
+      <path d="M13.5 3.75V8.5H18" fill="#ffffff" opacity="0.92" />
+      <path d="M9 12.25h6M9 15.25h6M9 18.25h4.5" stroke="#ffffff" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Unable to read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatUploadDate(dateValue) {
+  if (!dateValue) {
+    return "";
+  }
+
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(parsedDate);
 }
 
 function EyeIcon() {
@@ -61,22 +106,89 @@ function Settings() {
   const [passwordValues, setPasswordValues] = useState(initialPasswordValues);
   const [preferences, setPreferences] = useState(initialPreferences);
   const [linkedAccounts, setLinkedAccounts] = useState(initialLinkedAccounts);
+  const [locationOptions, setLocationOptions] = useState([]);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const hasResume = Boolean(formValues.resumeFileName);
+  const uploadedResumeLabel = formatUploadDate(formValues.resumeUploadedAt);
 
-  useEffect(() => {
+  const photoPreviewUrl = useMemo(() => {
     if (!formValues.photo) {
-      setPhotoPreviewUrl("");
-      return undefined;
+      return "";
     }
 
-    const objectUrl = URL.createObjectURL(formValues.photo);
-    setPhotoPreviewUrl(objectUrl);
+    return URL.createObjectURL(formValues.photo);
+  }, [formValues.photo]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) {
+        URL.revokeObjectURL(photoPreviewUrl);
+      }
+    };
+  }, [photoPreviewUrl]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadSettingsData() {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const [currentUser, locationData] = await Promise.all([
+          userApi.getCurrentUser(),
+          userApi.getAlgerianCities(),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        const fullName = [currentUser?.firstName, currentUser?.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+        setFormValues({
+          fullName,
+          email: currentUser?.email || "",
+          photo: null,
+          bio: currentUser?.bio || "",
+          portfolioUrl: currentUser?.portfolioUrl || "",
+          cityId: currentUser?.cityId || "",
+          resumeFile: null,
+          resumeFileName: currentUser?.resumeFileName || "",
+          resumeDownloadUrl: currentUser?.resumeDownloadUrl || "",
+          resumeUploadedAt: currentUser?.resumeUploadedAt || "",
+          removeResume: false,
+          languages: Array.isArray(currentUser?.languages)
+            ? currentUser.languages.join(", ")
+            : "",
+        });
+        setLocationOptions(Array.isArray(locationData?.cities) ? locationData.cities : []);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setErrorMessage(error.message);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSettingsData();
 
     return () => {
-      URL.revokeObjectURL(objectUrl);
+      isActive = false;
     };
-  }, [formValues.photo]);
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -96,6 +208,47 @@ function Settings() {
     }));
   };
 
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0] || null;
+
+    if (!file) {
+      return;
+    }
+
+    if (!ACCEPTED_RESUME_MIME_TYPES.has(file.type)) {
+      setErrorMessage("Le CV doit etre au format PDF, DOC ou DOCX.");
+      return;
+    }
+
+    if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {
+      setErrorMessage("Le CV doit faire moins de 5 MB.");
+      return;
+    }
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setFormValues((current) => ({
+      ...current,
+      resumeFile: file,
+      resumeFileName: file.name,
+      resumeDownloadUrl: "",
+      resumeUploadedAt: "",
+      removeResume: false,
+    }));
+  };
+
+  const handleRemoveResume = () => {
+    setStatusMessage("");
+    setFormValues((current) => ({
+      ...current,
+      resumeFile: null,
+      resumeFileName: "",
+      resumeDownloadUrl: "",
+      resumeUploadedAt: "",
+      removeResume: true,
+    }));
+  };
+
   const handlePasswordChange = (event) => {
     const { name, value } = event.target;
 
@@ -105,8 +258,59 @@ function Settings() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    setIsSaving(true);
+    setErrorMessage("");
+    setStatusMessage("");
+
+    try {
+      const payload = {
+        name: formValues.fullName,
+        email: formValues.email,
+        bio: formValues.bio,
+        portfolioUrl: formValues.portfolioUrl,
+        cityId: formValues.cityId,
+        languages: formValues.languages
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      };
+
+      if (formValues.resumeFile) {
+        payload.resumeFileName = formValues.resumeFile.name;
+        payload.resumeFileDataUrl = await readFileAsDataUrl(formValues.resumeFile);
+      } else if (formValues.removeResume) {
+        payload.removeResume = true;
+      }
+
+      const updatedUser = await userApi.updateCurrentUser(payload);
+
+      updateAuthUser(updatedUser);
+      setFormValues((current) => ({
+        ...current,
+        resumeFile: null,
+        resumeFileName: updatedUser?.resumeFileName || "",
+        resumeDownloadUrl: updatedUser?.resumeDownloadUrl || "",
+        resumeUploadedAt: updatedUser?.resumeUploadedAt || "",
+        removeResume: false,
+      }));
+
+      setStatusMessage(
+        formValues.resumeFile
+          ? "Profile saved successfully. CV uploaded."
+          : formValues.removeResume
+            ? "Profile saved successfully. CV removed."
+            : formValues.photo
+              ? "Profile saved. The photo preview remains local until an upload endpoint is added."
+              : "Profile saved successfully.",
+      );
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePasswordSubmit = (event) => {
@@ -132,6 +336,9 @@ function Settings() {
 
   return (
     <section className="settings-page">
+      {errorMessage ? <p>{errorMessage}</p> : null}
+      {statusMessage ? <p>{statusMessage}</p> : null}
+
       <form className="settings-page__card" onSubmit={handleSubmit}>
         <h2 className="settings-page__title">Account Information</h2>
 
@@ -142,6 +349,7 @@ function Settings() {
             name="fullName"
             value={formValues.fullName}
             onChange={handleChange}
+            disabled={isLoading || isSaving}
           />
         </label>
 
@@ -152,6 +360,7 @@ function Settings() {
             name="email"
             value={formValues.email}
             onChange={handleChange}
+            disabled={isLoading || isSaving}
           />
         </label>
 
@@ -183,6 +392,7 @@ function Settings() {
                   accept="image/*"
                   onChange={handlePhotoChange}
                   aria-labelledby="settings-photo-label"
+                  disabled={isLoading || isSaving}
                 />
 
                 <label htmlFor="settings-photo-input" className="settings-page__upload-button">
@@ -199,18 +409,113 @@ function Settings() {
 
         <label className="settings-page__field">
           <span>Bio</span>
-          <textarea name="bio" value={formValues.bio} onChange={handleChange} rows="4" />
+          <textarea
+            name="bio"
+            value={formValues.bio}
+            onChange={handleChange}
+            rows="4"
+            disabled={isLoading || isSaving}
+          />
         </label>
+
+        <label className="settings-page__field">
+          <span>Portfolio Link</span>
+          <input
+            type="url"
+            name="portfolioUrl"
+            placeholder="https://example.com/portfolio"
+            value={formValues.portfolioUrl}
+            onChange={handleChange}
+            disabled={isLoading || isSaving}
+          />
+        </label>
+
+        <div className="settings-page__field">
+          <span id="settings-resume-label">Resume / CV</span>
+
+          <div className="settings-page__upload settings-page__upload--document">
+            <div
+              className="settings-page__upload-preview settings-page__upload-preview--document"
+              aria-hidden="true"
+            >
+              <ResumeIcon />
+            </div>
+
+            <div className="settings-page__upload-content">
+              <div className="settings-page__upload-copy">
+                <strong>Upload your CV</strong>
+                <p>PDF, DOC or DOCX up to 5 MB. It will appear in your Portfolio section.</p>
+              </div>
+
+              <div className="settings-page__upload-actions">
+                <input
+                  id="settings-resume-input"
+                  className="settings-page__upload-input"
+                  type="file"
+                  name="resume"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleResumeChange}
+                  aria-labelledby="settings-resume-label"
+                  disabled={isLoading || isSaving}
+                />
+
+                <label htmlFor="settings-resume-input" className="settings-page__upload-button">
+                  <span>{hasResume ? "Change CV" : "Choose CV"}</span>
+                </label>
+
+                <span className="settings-page__upload-file-name">
+                  {hasResume ? formValues.resumeFileName : "No file selected"}
+                </span>
+              </div>
+
+              {hasResume ? (
+                <div className="settings-page__upload-meta">
+                  {formValues.resumeDownloadUrl && !formValues.resumeFile ? (
+                    <a
+                      href={formValues.resumeDownloadUrl}
+                      download={formValues.resumeFileName}
+                      className="settings-page__upload-link"
+                    >
+                      Download current CV
+                    </a>
+                  ) : null}
+
+                  {uploadedResumeLabel ? (
+                    <span className="settings-page__upload-hint">
+                      Uploaded {uploadedResumeLabel}
+                    </span>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className="settings-page__upload-link settings-page__upload-link--danger"
+                    onClick={handleRemoveResume}
+                    disabled={isLoading || isSaving}
+                  >
+                    Remove CV
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
 
         <div className="settings-page__field-grid">
           <label className="settings-page__field">
             <span>Location</span>
-            <input
-              type="text"
-              name="location"
-              value={formValues.location}
+            <select
+              name="cityId"
+              value={formValues.cityId}
               onChange={handleChange}
-            />
+              disabled={isLoading || isSaving}
+            >
+              <option value="">Select an Algerian city</option>
+              {locationOptions.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="settings-page__field">
@@ -220,12 +525,13 @@ function Settings() {
               name="languages"
               value={formValues.languages}
               onChange={handleChange}
+              disabled={isLoading || isSaving}
             />
           </label>
         </div>
 
-        <button type="submit" className="settings-page__submit">
-          Save Changes
+        <button type="submit" className="settings-page__submit" disabled={isLoading || isSaving}>
+          {isSaving ? "Saving..." : "Save Changes"}
         </button>
       </form>
 
@@ -368,30 +674,34 @@ function Settings() {
         <h2 className="settings-page__title">Linked Accounts</h2>
 
         <div className="settings-page__linked-list">
-          {linkedAccounts.map((account) => (
-            <article key={account.id} className="settings-page__linked-card">
-              <div className="settings-page__linked-main">
-                <span className="settings-page__linked-icon" aria-hidden="true">
-                  <span className="settings-page__linked-icon-letter">G</span>
-                </span>
+          {linkedAccounts.length > 0 ? (
+            linkedAccounts.map((account) => (
+              <article key={account.id} className="settings-page__linked-card">
+                <div className="settings-page__linked-main">
+                  <span className="settings-page__linked-icon" aria-hidden="true">
+                    <span className="settings-page__linked-icon-letter">G</span>
+                  </span>
 
-                <div className="settings-page__linked-copy">
-                  <h3>{account.provider}</h3>
-                  <p>{account.email}</p>
+                  <div className="settings-page__linked-copy">
+                    <h3>{account.provider}</h3>
+                    <p>{account.email}</p>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                className={`settings-page__linked-action ${
-                  account.connected ? "is-disconnect" : "is-connect"
-                }`}
-                onClick={() => handleLinkedAccountToggle(account.id)}
-              >
-                {account.connected ? "Disconnect" : "Connect"}
-              </button>
-            </article>
-          ))}
+                <button
+                  type="button"
+                  className={`settings-page__linked-action ${
+                    account.connected ? "is-disconnect" : "is-connect"
+                  }`}
+                  onClick={() => handleLinkedAccountToggle(account.id)}
+                >
+                  {account.connected ? "Disconnect" : "Connect"}
+                </button>
+              </article>
+            ))
+          ) : (
+            <p>No linked accounts available from the backend yet.</p>
+          )}
         </div>
       </section>
     </section>

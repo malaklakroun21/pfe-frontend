@@ -233,6 +233,10 @@
   line-height: 1.8;
 }
 
+.my-profile-page__empty-state-card {
+  text-align: left;
+}
+
 .my-profile-page__details-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -396,6 +400,8 @@
   padding: 14px 16px;
   border-radius: 18px;
   background: #fbf6ef;
+  color: inherit;
+  text-decoration: none;
 }
 
 .my-profile-page__document-icon {

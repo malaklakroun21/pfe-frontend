@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "./Sign.css";
 
-function Sign() {
+function Sign({ isSubmitting = false, errorMessage = "" }) {
   return (
     <section className="Sign">
       <div className="Sign-container">
@@ -51,8 +51,10 @@ function Sign() {
             />
           </div>
 
-          <button type="submit" className="Sign-submit">
-            Sign Up
+          {errorMessage ? <p>{errorMessage}</p> : null}
+
+          <button type="submit" className="Sign-submit" disabled={isSubmitting}>
+            {isSubmitting ? "Création..." : "Sign Up"}
           </button>
 
           <div className="Sign-divider">

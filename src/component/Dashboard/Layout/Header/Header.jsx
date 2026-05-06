@@ -1,9 +1,27 @@
 import "./Header.css";
 import { useNavigate } from "react-router-dom";
+import { useAuthSession } from "../../../../authSession.js";
 import { useNotificationsState } from "../../Notifications/notificationsStore.js";
+
+function buildInitials(user) {
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+
+  if (!fullName) {
+    return "??";
+  }
+
+  const parts = fullName.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
 
 function Header() {
   const navigate = useNavigate();
+  const { user } = useAuthSession();
   const { unreadCount } = useNotificationsState();
 
   return (
@@ -60,7 +78,7 @@ function Header() {
           aria-label="Open my profile"
           onClick={() => navigate("/app/skills")}
         >
-          JD
+          {buildInitials(user)}
         </button>
       </div>
     </header>

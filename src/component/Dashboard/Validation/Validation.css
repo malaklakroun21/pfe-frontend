@@ -125,6 +125,26 @@
   gap: 16px;
 }
 
+.validation-page__wizard-empty-state {
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #f1cdbd;
+  border-radius: 20px;
+  background: #fff8f4;
+}
+
+.validation-page__wizard-empty-state strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.validation-page__wizard-empty-state p {
+  margin: 0;
+  color: #8f3c16;
+  line-height: 1.55;
+}
+
 .validation-page__wizard-option-list--mentor {
   gap: 22px;
 }

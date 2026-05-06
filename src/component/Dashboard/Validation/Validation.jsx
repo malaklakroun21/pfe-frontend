@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchValidationPageData } from "../dashboardPreviewApi.js";
+import { dashboardApi } from "../../../api/client.js";
 import "./Validation.css";
 
 function ValidationBadgeIcon() {
@@ -31,68 +31,90 @@ function getRecommendedMentorId(mentors, selectedSkillId) {
   return matchingMentor?.id ?? mentors[0].id;
 }
 
-function RequestValidationWizard({ requestFlow }) {
+function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const steps = Array.isArray(requestFlow?.steps) ? requestFlow.steps : [];
   const skillOptions = Array.isArray(requestFlow?.skillOptions) ? requestFlow.skillOptions : [];
   const mentorOptions = Array.isArray(requestFlow?.mentorOptions) ? requestFlow.mentorOptions : [];
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [selectedSkillId, setSelectedSkillId] = useState(skillOptions[0]?.id ?? "");
+  const [selectedSkillId, setSelectedSkillId] = useState("");
   const [selectedMentorId, setSelectedMentorId] = useState("");
+  const [customSkillName, setCustomSkillName] = useState("");
   const [portfolioLink, setPortfolioLink] = useState("");
   const [supportingFiles, setSupportingFiles] = useState([]);
   const [validatorNote, setValidatorNote] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  useEffect(() => {
-    if (!selectedSkillId && skillOptions.length > 0) {
-      setSelectedSkillId(skillOptions[0].id);
-    }
-  }, [selectedSkillId, skillOptions]);
-
-  useEffect(() => {
-    if (mentorOptions.length === 0) {
-      return;
-    }
-
-    setSelectedMentorId((current) => {
-      const recommendedMentorId = getRecommendedMentorId(mentorOptions, selectedSkillId);
-
-      if (!current) {
-        return recommendedMentorId;
-      }
-
-      const stillExists = mentorOptions.some((mentor) => mentor.id === current);
-
-      if (!stillExists) {
-        return recommendedMentorId;
-      }
-
-      return current;
-    });
-  }, [mentorOptions, selectedSkillId]);
+  const effectiveSelectedSkillId = selectedSkillId || skillOptions[0]?.id || "";
+  const selectedSkillFromOptions =
+    skillOptions.find((skill) => skill.id === effectiveSelectedSkillId) ?? null;
+  const normalizedCustomSkillName = customSkillName.trim();
+  const selectedSkill =
+    selectedSkillFromOptions ??
+    (normalizedCustomSkillName
+      ? {
+          id: "custom-skill",
+          skillId: "",
+          label: normalizedCustomSkillName,
+          description: "Manual validation request",
+        }
+      : null);
+  const recommendedMentorId = getRecommendedMentorId(
+    mentorOptions,
+    selectedSkillFromOptions?.id || effectiveSelectedSkillId
+  );
+  const mentorStillExists = mentorOptions.some((mentor) => mentor.id === selectedMentorId);
+  const effectiveSelectedMentorId = mentorStillExists
+    ? selectedMentorId
+    : recommendedMentorId;
 
   const currentStep = steps[activeStepIndex] ?? steps[0] ?? null;
-  const selectedSkill = skillOptions.find((skill) => skill.id === selectedSkillId) ?? null;
-  const selectedMentor = mentorOptions.find((mentor) => mentor.id === selectedMentorId) ?? null;
+  const selectedMentor =
+    mentorOptions.find((mentor) => mentor.id === effectiveSelectedMentorId) ?? null;
 
   const canContinueByStep = {
-    "select-skill": Boolean(selectedSkillId),
-    "choose-mentor": Boolean(selectedMentorId),
+    "select-skill": Boolean(selectedSkill),
+    "choose-mentor": Boolean(effectiveSelectedMentorId),
     evidence: portfolioLink.trim().length > 0 || supportingFiles.length > 0,
     submit: Boolean(selectedSkill && selectedMentor),
   };
 
   const canContinue = currentStep ? canContinueByStep[currentStep.key] ?? true : false;
   const isLastStep = activeStepIndex === steps.length - 1;
-  const primaryLabel = isLastStep ? (isSubmitted ? "Request sent" : "Submit Request") : "Continue";
+  const primaryLabel = isLastStep
+    ? isSubmitted
+      ? "Request sent"
+      : isSubmitting
+        ? "Sending..."
+        : "Submit Request"
+    : "Continue";
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!currentStep || !canContinue) {
       return;
     }
 
     if (isLastStep) {
-      setIsSubmitted(true);
+      setSubmitError("");
+      setIsSubmitting(true);
+
+      try {
+        await onSubmitRequest?.({
+          selectedSkill,
+          selectedMentor,
+          portfolioLink,
+          supportingFiles,
+          validatorNote,
+        });
+
+        setIsSubmitted(true);
+      } catch (error) {
+        setSubmitError(error.message || "Unable to submit validation request.");
+      } finally {
+        setIsSubmitting(false);
+      }
+
       return;
     }
 
@@ -126,21 +148,43 @@ function RequestValidationWizard({ requestFlow }) {
               <h4>Select a skill to validate</h4>
             </div>
 
-            <div className="validation-page__wizard-option-list">
-              {skillOptions.map((skill) => (
-                <button
-                  key={skill.id}
-                  type="button"
-                  className={`validation-page__wizard-option ${
-                    selectedSkillId === skill.id ? "is-selected" : ""
-                  }`}
-                  onClick={() => setSelectedSkillId(skill.id)}
-                >
-                  <strong>{skill.label}</strong>
-                  {skill.description ? <span>{skill.description}</span> : null}
-                </button>
-              ))}
-            </div>
+            {skillOptions.length > 0 ? (
+              <div className="validation-page__wizard-option-list">
+                {skillOptions.map((skill) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    className={`validation-page__wizard-option ${
+                      effectiveSelectedSkillId === skill.id ? "is-selected" : ""
+                    }`}
+                    onClick={() => setSelectedSkillId(skill.id)}
+                  >
+                    <strong>{skill.label}</strong>
+                    {skill.description ? <span>{skill.description}</span> : null}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="validation-page__wizard-empty-state">
+                  <strong>No backend skill found yet.</strong>
+                  <p>
+                    This account does not have a saved skill to validate yet. Enter the skill name
+                    manually to continue.
+                  </p>
+                </div>
+
+                <label className="validation-page__wizard-field">
+                  <span>Skill name</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. Node.js API Development"
+                    value={customSkillName}
+                    onChange={(event) => setCustomSkillName(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
           </div>
         );
       case "choose-mentor":
@@ -150,27 +194,34 @@ function RequestValidationWizard({ requestFlow }) {
               <h4>Choose a mentor to validate your skill</h4>
             </div>
 
-            <div className="validation-page__wizard-option-list validation-page__wizard-option-list--mentor">
-              {mentorOptions.map((mentor) => (
-                <button
-                  key={mentor.id}
-                  type="button"
-                  className={`validation-page__wizard-option validation-page__wizard-option--mentor ${
-                    selectedMentorId === mentor.id ? "is-selected" : ""
-                  }`}
-                  onClick={() => setSelectedMentorId(mentor.id)}
-                >
-                  <div className="validation-page__mentor-main">
-                    <span className="validation-page__mentor-avatar">{mentor.initials}</span>
+            {mentorOptions.length > 0 ? (
+              <div className="validation-page__wizard-option-list validation-page__wizard-option-list--mentor">
+                {mentorOptions.map((mentor) => (
+                  <button
+                    key={mentor.id}
+                    type="button"
+                    className={`validation-page__wizard-option validation-page__wizard-option--mentor ${
+                      effectiveSelectedMentorId === mentor.id ? "is-selected" : ""
+                    }`}
+                    onClick={() => setSelectedMentorId(mentor.id)}
+                  >
+                    <div className="validation-page__mentor-main">
+                      <span className="validation-page__mentor-avatar">{mentor.initials}</span>
 
-                    <div className="validation-page__mentor-copy">
-                      <strong>{mentor.name}</strong>
-                      <span>{mentor.specialty}</span>
+                      <div className="validation-page__mentor-copy">
+                        <strong>{mentor.name}</strong>
+                        <span>{mentor.specialty}</span>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="validation-page__wizard-empty-state">
+                <strong>No mentor is available right now.</strong>
+                <p>Add at least one active mentor account before sending a validation request.</p>
+              </div>
+            )}
           </div>
         );
       case "evidence":
@@ -309,11 +360,13 @@ function RequestValidationWizard({ requestFlow }) {
       {renderStepContent()}
 
       <div className="validation-page__wizard-footer">
+        {submitError ? <p>{submitError}</p> : null}
+
         <button
           type="button"
           className="validation-page__wizard-secondary"
           onClick={handleBack}
-          disabled={activeStepIndex === 0}
+          disabled={activeStepIndex === 0 || isSubmitting}
         >
           Back
         </button>
@@ -322,7 +375,7 @@ function RequestValidationWizard({ requestFlow }) {
           type="button"
           className="validation-page__wizard-primary"
           onClick={handleContinue}
-          disabled={!canContinue || isSubmitted}
+          disabled={!canContinue || isSubmitted || isSubmitting}
         >
           {primaryLabel}
         </button>
@@ -344,7 +397,7 @@ function Validation() {
       setHasError(false);
 
       try {
-        const data = await fetchValidationPageData("john-doe");
+        const data = await dashboardApi.getValidationData();
 
         if (!isActive) {
           return;
@@ -417,7 +470,28 @@ function Validation() {
         </div>
       </article>
 
-      <RequestValidationWizard requestFlow={pageData.requestFlow} />
+      <RequestValidationWizard
+        requestFlow={pageData.requestFlow}
+        onSubmitRequest={async ({
+          selectedSkill,
+          selectedMentor,
+          portfolioLink,
+          validatorNote,
+        }) => {
+          const payload = {
+            skillName: selectedSkill?.label || "",
+            mentorUserId: selectedMentor?.id || "",
+            portfolioLink,
+            note: validatorNote,
+          };
+
+          if (selectedSkill?.skillId) {
+            payload.skillId = selectedSkill.skillId;
+          }
+
+          await dashboardApi.createValidationRequest(payload);
+        }}
+      />
     </section>
   );
 }

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "./Login.css";
 
-const Login = () => {
+const Login = ({ isSubmitting = false, errorMessage = "" }) => {
   return (
     <section className="Login">
       <div className="Login-container">
@@ -34,8 +34,10 @@ const Login = () => {
             Forgot Password?
           </a>
 
-          <button type="submit" className="Login-submit">
-            Log In
+          {errorMessage ? <p>{errorMessage}</p> : null}
+
+          <button type="submit" className="Login-submit" disabled={isSubmitting}>
+            {isSubmitting ? "Connexion..." : "Log In"}
           </button>
 
           <div className="Login-divider">

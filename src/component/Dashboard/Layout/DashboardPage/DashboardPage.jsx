@@ -6,11 +6,11 @@ function DashboardPage({ title, subtitle, stats, cards, showHero = true }) {
       {showHero ? (
         <section className="dashboard-page__hero">
           <div>
-            <p className="dashboard-page__hero-kicker">Internal app preview</p>
+            <p className="dashboard-page__hero-kicker">Dashboard</p>
             <h2>{title}</h2>
             <p>{subtitle}</p>
           </div>
-          <div className="dashboard-page__hero-badge">Frontend only</div>
+          <div className="dashboard-page__hero-badge">Live data</div>
         </section>
       ) : null}
 
