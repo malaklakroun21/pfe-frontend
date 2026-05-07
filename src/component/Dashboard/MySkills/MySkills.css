@@ -4,7 +4,7 @@
 }
 
 .my-profile-page__hero,
-.my-profile-page__tabs {
+.my-profile-page__tabs-shell {
   width: calc(100% + 64px + var(--dashboard-sidebar-gap, 0px));
   margin-left: calc(-32px - var(--dashboard-sidebar-gap, 0px));
   padding-left: 32px;
@@ -194,7 +194,50 @@
   align-items: flex-end;
   gap: 38px;
   min-height: 76px;
+  overflow-x: auto;
+}
+
+.my-profile-page__tabs-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 76px;
   border-bottom: 1px solid rgba(229, 218, 204, 0.9);
+}
+
+.my-profile-page__tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+}
+
+.my-profile-page__tab-action-button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.8px solid #df5a1c;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #df5a1c;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-profile-page__tab-action-button:hover {
+  background: #fff7f1;
+}
+
+.my-profile-page__tab-action-button--primary {
+  background: #df5a1c;
+  color: #ffffff;
+}
+
+.my-profile-page__tab-action-button--primary:hover {
+  background: #c94f17;
 }
 
 .my-profile-page__tab {
@@ -293,7 +336,8 @@
 }
 
 .my-profile-page__skill-card,
-.my-profile-page__review-card {
+.my-profile-page__review-card,
+.my-profile-page__activity-card {
   padding: 22px 20px;
   border: 1px solid rgba(243, 228, 214, 0.95);
   border-radius: 20px;
@@ -410,6 +454,164 @@
   background: #ffffff;
   box-shadow: 0 12px 24px rgba(158, 118, 88, 0.05);
   box-sizing: border-box;
+}
+
+.my-profile-page__activity-card {
+  width: 100%;
+  padding: 24px 28px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(158, 118, 88, 0.05);
+  box-sizing: border-box;
+}
+
+.my-profile-page__activity-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.my-profile-page__activity-copy {
+  min-width: 0;
+}
+
+.my-profile-page__activity-copy h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.my-profile-page__activity-copy p {
+  margin: 8px 0 0;
+  color: #7f2e0a;
+  line-height: 1.7;
+}
+
+.my-profile-page__activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  margin-top: 18px;
+  color: #7f2e0a;
+  font-size: 0.94rem;
+}
+
+.my-profile-page__activity-meta span,
+.my-profile-page__activity-meta strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.my-profile-page__activity-meta svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.my-profile-page__activity-actions {
+  margin-top: 18px;
+}
+
+.my-profile-page__project-members {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(223, 90, 28, 0.12);
+}
+
+.my-profile-page__project-members-title {
+  display: block;
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.my-profile-page__project-member-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.my-profile-page__project-member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fbf6ef;
+}
+
+.my-profile-page__project-member-item strong {
+  color: #0f172a;
+  font-size: 0.94rem;
+  line-height: 1.4;
+}
+
+.my-profile-page__project-member-item span,
+.my-profile-page__project-members-empty {
+  color: #7f2e0a;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.my-profile-page__project-members-empty {
+  margin: 12px 0 0;
+}
+
+.my-profile-page__activity-button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1.8px solid #df5a1c;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #df5a1c;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-profile-page__activity-button:hover {
+  background: #fff7f1;
+}
+
+.my-profile-page__status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.my-profile-page__status-pill--pending {
+  background: #fff0cc;
+  color: #d47c00;
+}
+
+.my-profile-page__status-pill--upcoming,
+.my-profile-page__status-pill--open {
+  background: #e2f8ec;
+  color: #0b7a46;
+}
+
+.my-profile-page__status-pill--completed {
+  background: #e3efff;
+  color: #3464c3;
+}
+
+.my-profile-page__status-pill--cancelled {
+  background: #ffe2dc;
+  color: #d34d29;
+}
+
+.my-profile-page__status-pill--in_progress {
+  background: #fff2d1;
+  color: #8b5a00;
 }
 
 .my-profile-page__review-card + .my-profile-page__review-card {
@@ -584,7 +786,17 @@
 
   .my-profile-page__tabs {
     gap: 24px;
-    overflow-x: auto;
+  }
+
+  .my-profile-page__tabs-shell {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 4px;
+  }
+
+  .my-profile-page__tab-actions {
+    width: 100%;
+    padding-bottom: 14px;
   }
 
 }
@@ -595,7 +807,7 @@
   }
 
   .my-profile-page__hero,
-  .my-profile-page__tabs {
+  .my-profile-page__tabs-shell {
     width: calc(100% + 36px);
     margin-left: -18px;
     padding-left: 18px;
@@ -654,7 +866,8 @@
     flex-direction: column;
   }
 
-  .my-profile-page__review-card {
+  .my-profile-page__review-card,
+  .my-profile-page__activity-card {
     padding: 20px 20px;
   }
 
@@ -669,6 +882,22 @@
   }
 
   .my-profile-page__skill-action {
+    width: 100%;
+  }
+
+  .my-profile-page__activity-head,
+  .my-profile-page__tab-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-profile-page__project-member-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .my-profile-page__tab-action-button,
+  .my-profile-page__activity-button {
     width: 100%;
   }
 

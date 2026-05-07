@@ -1,115 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { sessionApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
-import { useNotificationsState } from "../Notifications/notificationsStore.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
+import {
+  getNormalizedSessionSkillLabel,
+  getNormalizedSessionStatus,
+  mapDirectorySession,
+} from "./sessionViewModel.js";
 import "./Sessions.css";
 
-const sessionTabs = [
-  { key: "upcoming", label: "Upcoming" },
-  { key: "pending", label: "Pending" },
-  { key: "completed", label: "Completed" },
-  { key: "cancelled", label: "Cancelled" },
-];
-
-const sessionStatusMap = {
-  ACCEPTED: {
-    tabKey: "upcoming",
-    badge: "Confirmed",
-  },
-  PENDING: {
-    tabKey: "pending",
-    badge: "Pending",
-  },
-  COMPLETED: {
-    tabKey: "completed",
-    badge: "Completed",
-  },
-  REJECTED: {
-    tabKey: "cancelled",
-    badge: "Cancelled",
-  },
-};
-
-function buildFullName(user) {
-  return [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.userId || "Unknown";
-}
-
-function buildInitials(user) {
-  const fullName = buildFullName(user);
-  const parts = fullName.split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return "??";
-  }
-
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
-function formatDateLabel(dateValue) {
-  const parsedDate = new Date(dateValue);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Date not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(parsedDate);
-}
-
-function formatTimeLabel(dateValue) {
-  const parsedDate = new Date(dateValue);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Time not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsedDate);
-}
-
-function formatDurationLabel(duration) {
-  if (!duration) {
-    return "Not specified";
-  }
-
-  return duration === 1 ? "1 hour" : `${duration} hours`;
-}
-
-function formatCreditLabel(credits) {
-  if (!credits) {
-    return "0 credits";
-  }
-
-  return `${credits} credits`;
-}
-
-function BellIcon() {
+function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M15 17H5.5l1.6-2.13V10a4.9 4.9 0 1 1 9.8 0v4.87L18.5 17"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 19a2 2 0 0 0 4 0"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -118,12 +23,7 @@ function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="4.25" y="5.75" width="15.5" height="14" rx="2.25" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M8 3.75v4M16 3.75v4M4.25 10h15.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M8 3.75v4M16 3.75v4M4.25 10h15.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -143,68 +43,102 @@ function ClockIcon() {
   );
 }
 
-function PersonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.1" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M6.75 18.25a5.45 5.45 0 0 1 10.5 0"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+function buildCategoryCards(sessionItems) {
+  const categoryMap = new Map();
+
+  sessionItems.forEach((session) => {
+    const existingCategory = categoryMap.get(session.categoryKey);
+
+    if (!existingCategory) {
+      categoryMap.set(session.categoryKey, {
+        key: session.categoryKey,
+        label: session.categoryLabel,
+        code: session.categoryCode,
+        theme: session.categoryTheme,
+        totalSessions: 1,
+        mentorIds: new Set(session.mentorUserId ? [session.mentorUserId] : []),
+        nextScheduledAt: session.scheduledAt || Number.POSITIVE_INFINITY,
+        nextDateLabel: session.date,
+      });
+
+      return;
+    }
+
+    existingCategory.totalSessions += 1;
+
+    if (session.mentorUserId) {
+      existingCategory.mentorIds.add(session.mentorUserId);
+    }
+
+    if ((session.scheduledAt || Number.POSITIVE_INFINITY) < existingCategory.nextScheduledAt) {
+      existingCategory.nextScheduledAt = session.scheduledAt || Number.POSITIVE_INFINITY;
+      existingCategory.nextDateLabel = session.date;
+    }
+  });
+
+  return [...categoryMap.values()]
+    .map((category) => ({
+      ...category,
+      mentorCount: category.mentorIds.size,
+    }))
+    .sort((left, right) => {
+      if (right.totalSessions !== left.totalSessions) {
+        return right.totalSessions - left.totalSessions;
+      }
+
+      return left.label.localeCompare(right.label);
+    });
+}
+
+function buildPendingRequestKey(mentorUserId, skillLabel) {
+  return `${mentorUserId || ""}::${String(skillLabel).trim().toLowerCase()}`;
+}
+
+function buildJoinRequestDate(session, nowTimestamp) {
+  if (session.isoDate && session.scheduledAt > nowTimestamp) {
+    return session.isoDate;
+  }
+
+  return new Date(nowTimestamp + 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getCurrentTimestamp() {
+  return Date.now();
 }
 
 function Sessions() {
-  const navigate = useNavigate();
+  const { categoryKey = "" } = useParams();
   const { user } = useAuthSession();
-  const { unreadCount } = useNotificationsState();
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sessionItems, setSessionItems] = useState([]);
+  const [ownSessions, setOwnSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isJoiningSessionId, setIsJoiningSessionId] = useState("");
+  const [isCancellingSessionId, setIsCancellingSessionId] = useState("");
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadSessions() {
-      if (!user?.userId) {
-        return;
-      }
-
+    async function loadSessionsDirectory() {
       setIsLoading(true);
       setErrorMessage("");
+      setStatusMessage("");
 
       try {
-        const sessions = await sessionApi.list();
+        const [sessions, userSessions] = await Promise.all([sessionApi.listDirectory(), sessionApi.list()]);
 
         if (!isActive) {
           return;
         }
 
-        const mappedSessions = (Array.isArray(sessions) ? sessions : []).map((session) => {
-          const statusConfig = sessionStatusMap[session.status] || sessionStatusMap.PENDING;
-          const isTeacher = session.teacherId === user?.userId;
-          const otherParticipant = isTeacher ? session.learner : session.teacher;
-
-          return {
-            id: session.sessionId,
-            participantUserId: otherParticipant?.userId || "",
-            initials: buildInitials(otherParticipant),
-            title: session.skill,
-            mentor: buildFullName(otherParticipant),
-            date: formatDateLabel(session.date),
-            time: formatTimeLabel(session.date),
-            duration: formatDurationLabel(session.actualDuration || session.duration),
-            credits: formatCreditLabel(session.chargedCredits || session.duration),
-            status: statusConfig.tabKey,
-            badge: statusConfig.badge,
-          };
-        });
-
-        setSessionItems(mappedSessions);
+        setSessionItems(
+          (Array.isArray(sessions) ? sessions : []).map((session) =>
+            mapDirectorySession(session, user?.userId),
+          ),
+        );
+        setOwnSessions(Array.isArray(userSessions) ? userSessions : []);
       } catch (error) {
         if (!isActive) {
           return;
@@ -218,144 +152,332 @@ function Sessions() {
       }
     }
 
-    loadSessions();
+    loadSessionsDirectory();
 
     return () => {
       isActive = false;
     };
   }, [user?.userId]);
 
-  const tabCounts = useMemo(
-    () =>
-      sessionTabs.reduce((counts, tab) => {
-        counts[tab.key] = sessionItems.filter((item) => item.status === tab.key).length;
-        return counts;
-      }, {}),
-    [sessionItems]
-  );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const categoryCards = useMemo(() => buildCategoryCards(sessionItems), [sessionItems]);
+  const selectedCategory = categoryCards.find((category) => category.key === categoryKey) || null;
+  const isCategoryRoute = categoryKey.length > 0;
+  const isUnknownCategory = isCategoryRoute && !isLoading && !selectedCategory;
 
-  const filteredSessions = sessionItems.filter((item) => item.status === activeTab);
+  const visibleCategoryCards = useMemo(() => {
+    return categoryCards.filter((category) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [category.label, category.code].join(" ").toLowerCase().includes(normalizedSearch);
+    });
+  }, [categoryCards, normalizedSearch]);
+
+  const filteredSessions = useMemo(() => {
+    return sessionItems.filter((session) => {
+      const matchesCategory = categoryKey ? session.categoryKey === categoryKey : false;
+      const matchesSearch = !normalizedSearch || session.searchText.includes(normalizedSearch);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [categoryKey, normalizedSearch, sessionItems]);
+
+  const activeSearchPlaceholder = selectedCategory
+    ? `Search mentors or sessions in ${selectedCategory.label}...`
+    : "Search a formation category...";
+
+  const pendingRequestMap = useMemo(() => {
+    const requestMap = new Map();
+
+    ownSessions.forEach((session) => {
+      if (getNormalizedSessionStatus(session) !== "PENDING" || session.learnerId !== user?.userId) {
+        return;
+      }
+
+      const requestKey = buildPendingRequestKey(session.teacherId, getNormalizedSessionSkillLabel(session));
+
+      if (!requestMap.has(requestKey)) {
+        requestMap.set(requestKey, session.sessionId);
+      }
+    });
+
+    return requestMap;
+  }, [ownSessions, user?.userId]);
+
+  function getPendingRequestSessionId(session) {
+    if (session.status === "pending" && session.learnerUserId === user?.userId) {
+      return session.id;
+    }
+
+    const requestKey = buildPendingRequestKey(session.mentorUserId, session.categoryLabel);
+    return pendingRequestMap.get(requestKey) || "";
+  }
+
+  async function handleJoinSession(session) {
+    if (!session.mentorUserId || session.isOwnMentor || isJoiningSessionId) {
+      return;
+    }
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsJoiningSessionId(session.id);
+
+    try {
+      const nowTimestamp = getCurrentTimestamp();
+      const createdSession = await sessionApi.request({
+        teacherId: session.mentorUserId,
+        skill: session.categoryLabel,
+        duration: session.durationHours,
+        date: buildJoinRequestDate(session, nowTimestamp),
+        message: `I'd like to join a ${session.categoryLabel} session with ${session.mentorName}.`,
+      });
+
+      setOwnSessions((currentSessions) => [createdSession, ...currentSessions]);
+      setStatusMessage(`Join request sent to ${session.mentorName}.`);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsJoiningSessionId("");
+    }
+  }
+
+  async function handleCancelRequest(session, pendingRequestSessionId) {
+    if (!pendingRequestSessionId || isCancellingSessionId) {
+      return;
+    }
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsCancellingSessionId(session.id);
+
+    try {
+      await sessionApi.cancel(pendingRequestSessionId);
+      setOwnSessions((currentSessions) =>
+        currentSessions.map((currentSession) =>
+          currentSession.sessionId === pendingRequestSessionId
+            ? {
+                ...currentSession,
+                status: "REJECTED",
+              }
+            : currentSession,
+        ),
+      );
+      setSessionItems((currentSessions) =>
+        currentSessions.map((currentSession) =>
+          currentSession.id === pendingRequestSessionId
+            ? {
+                ...currentSession,
+                status: "cancelled",
+                badge: "Cancelled",
+              }
+            : currentSession,
+        ),
+      );
+      setStatusMessage(`Pending request cancelled for ${session.mentorName}.`);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsCancellingSessionId("");
+    }
+  }
 
   return (
     <ViewFrame
       header={
         <header className="sessions-page__header">
-          <h1>My Sessions</h1>
-
-          <button
-            type="button"
-            className="sessions-page__notification-button"
-            aria-label="Notifications"
-            onClick={() => navigate("/app/notifications")}
-          >
-            <BellIcon />
-            {unreadCount > 0 ? (
-              <span className="sessions-page__notification-dot" aria-hidden="true" />
-            ) : null}
-          </button>
+          <h1>{selectedCategory ? selectedCategory.label : "Explore Formations"}</h1>
         </header>
       }
     >
       <section className="sessions-page">
-        <div className="sessions-page__tabs">
-          <div className="sessions-page__tabs-inner">
-            {sessionTabs.map((tab) => {
-              const isActive = tab.key === activeTab;
+        <div className="sessions-page__controls">
+          <div className="sessions-page__content-inner">
+            <div className="sessions-page__toolbar">
+              <label className="sessions-page__search" aria-label="Search sessions">
+                <span className="sessions-page__search-icon">
+                  <SearchIcon />
+                </span>
 
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  className={`sessions-page__tab ${isActive ? "is-active" : ""}`}
-                  onClick={() => setActiveTab(tab.key)}
-                  aria-pressed={isActive}
-                >
-                  {tab.label} ({tabCounts[tab.key] ?? 0})
-                </button>
-              );
-            })}
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={activeSearchPlaceholder}
+                  aria-label={activeSearchPlaceholder}
+                />
+              </label>
+
+              <p className="sessions-page__summary-text">
+                {selectedCategory
+                  ? `${filteredSessions.length} session${filteredSessions.length === 1 ? "" : "s"}`
+                  : `${visibleCategoryCards.length} categor${visibleCategoryCards.length === 1 ? "y" : "ies"}`}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="sessions-page__content">
-            <div className="sessions-page__content-inner">
-              {errorMessage ? <p>{errorMessage}</p> : null}
-              <div className="sessions-page__list">
-                {isLoading ? (
-                  <p>Loading sessions...</p>
-                ) : filteredSessions.length > 0 ? (
-                  filteredSessions.map((session) => (
-                    <article key={session.id} className="sessions-page__card">
-                      <div className="sessions-page__avatar">{session.initials}</div>
+          <div className="sessions-page__content-inner">
+            {errorMessage ? <p>{errorMessage}</p> : null}
+            {statusMessage ? <p className="sessions-page__status-message">{statusMessage}</p> : null}
 
-                      <div className="sessions-page__body">
-                        <div className="sessions-page__topline">
-                          <div className="sessions-page__title-group">
-                            <h2>{session.title}</h2>
-                            <span
-                              className={`sessions-page__badge sessions-page__badge--${session.status}`}
-                            >
-                              {session.badge}
+            {isLoading ? (
+              <div className="sessions-page__empty">Loading formations...</div>
+            ) : isUnknownCategory ? (
+              <section className="sessions-page__section sessions-page__section--sessions">
+                <div className="sessions-page__section-header sessions-page__section-header--split">
+                  <div>
+                    <p className="sessions-page__eyebrow">Formation</p>
+                    <h2>Category not found</h2>
+                    <p className="sessions-page__section-copy">
+                      This formation category does not exist anymore or has no sessions yet.
+                    </p>
+                  </div>
+                </div>
+
+                <Link className="sessions-page__back-link" to="/app/sessions">
+                  Return to categories
+                </Link>
+              </section>
+            ) : (
+              <>
+                {!isCategoryRoute ? (
+                  <section className="sessions-page__section">
+                    {visibleCategoryCards.length > 0 ? (
+                      <div className="sessions-page__category-grid">
+                        {visibleCategoryCards.map((category) => (
+                          <Link
+                            key={category.key}
+                            to={`/app/sessions/${encodeURIComponent(category.key)}`}
+                            className="sessions-page__category-card"
+                            style={{
+                              "--sessions-category-from": category.theme.from,
+                              "--sessions-category-to": category.theme.to,
+                              "--sessions-category-soft": category.theme.soft,
+                              "--sessions-category-ink": category.theme.ink,
+                            }}
+                          >
+                            <span className="sessions-page__category-badge">{category.code}</span>
+                            <strong>{category.label}</strong>
+                            <span className="sessions-page__category-stat">
+                              {category.totalSessions} session{category.totalSessions === 1 ? "" : "s"}
                             </span>
-                          </div>
-
-                          <div className="sessions-page__actions">
-                            <button
-                              type="button"
-                              className="sessions-page__action sessions-page__action--ghost"
-                            >
-                              {session.status === "completed" ? "Review" : "Cancel"}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="sessions-page__action sessions-page__action--primary"
-                              onClick={() => {
-                                if (session.participantUserId) {
-                                  navigate("/app/messages");
-                                }
-                              }}
-                            >
-                              {session.status === "completed" ? "Book Again" : "Message"}
-                            </button>
-                          </div>
-                        </div>
-
-                        <p>with {session.mentor}</p>
-
-                        <div className="sessions-page__meta">
-                          <span className="sessions-page__meta-item">
-                            <span className="sessions-page__meta-icon">
-                              <CalendarIcon />
+                            <span className="sessions-page__category-meta">
+                              {category.mentorCount} mentor{category.mentorCount === 1 ? "" : "s"}
                             </span>
-                            <span>{session.date}</span>
-                          </span>
-
-                          <span className="sessions-page__meta-item">
-                            <span className="sessions-page__meta-icon">
-                              <ClockIcon />
-                            </span>
-                            <span>{session.time}</span>
-                          </span>
-
-                          <span className="sessions-page__meta-item">
-                            <span className="sessions-page__meta-icon">
-                              <PersonIcon />
-                            </span>
-                            <span>{session.duration}</span>
-                          </span>
-
-                          <span className="sessions-page__credits">{session.credits}</span>
-                        </div>
+                            <span className="sessions-page__category-date">Next: {category.nextDateLabel}</span>
+                          </Link>
+                        ))}
                       </div>
-                    </article>
-                  ))
-                ) : (
-                  <p>No sessions found in this tab.</p>
-                )}
-              </div>
-            </div>
+                    ) : (
+                      <div className="sessions-page__empty">No categories match this search yet.</div>
+                    )}
+                  </section>
+                ) : null}
+
+                {selectedCategory && isCategoryRoute ? (
+                  <section className="sessions-page__section sessions-page__section--sessions">
+                    <div className="sessions-page__section-header sessions-page__section-header--split">
+                      <div>
+                        <p className="sessions-page__eyebrow">Sessions</p>
+                        <h2>{selectedCategory.label}</h2>
+                        <p className="sessions-page__section-copy">
+                          Browse the available sessions and mentors for this formation.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link className="sessions-page__back-link" to="/app/sessions">
+                      Return to categories
+                    </Link>
+
+                    {filteredSessions.length > 0 ? (
+                      <div className="sessions-page__catalog-grid">
+                        {filteredSessions.map((session) => (
+                          (() => {
+                            const pendingRequestSessionId = getPendingRequestSessionId(session);
+                            const hasPendingRequest = Boolean(pendingRequestSessionId);
+                            const hideActionButton =
+                              session.isOwnMentor ||
+                              session.status === "completed" ||
+                              session.status === "upcoming";
+
+                            return (
+                              <article
+                                key={session.id}
+                                className="sessions-page__catalog-card"
+                                style={{
+                                  "--sessions-category-from": session.categoryTheme.from,
+                                  "--sessions-category-to": session.categoryTheme.to,
+                                  "--sessions-category-soft": session.categoryTheme.soft,
+                                  "--sessions-category-ink": session.categoryTheme.ink,
+                                }}
+                              >
+                                <span className="sessions-page__catalog-badge">{session.mentorInitials}</span>
+                                <strong title={session.mentorName}>{session.mentorName}</strong>
+                                <span className="sessions-page__catalog-subtitle">
+                                  {hasPendingRequest ? "Pending Request" : session.badge}
+                                </span>
+
+                                <div className="sessions-page__catalog-meta">
+                                  <span className="sessions-page__meta-item">
+                                    <span className="sessions-page__meta-icon">
+                                      <CalendarIcon />
+                                    </span>
+                                    <span>{session.date}</span>
+                                  </span>
+
+                                  <span className="sessions-page__meta-item">
+                                    <span className="sessions-page__meta-icon">
+                                      <ClockIcon />
+                                    </span>
+                                    <span>{session.duration}</span>
+                                  </span>
+                                </div>
+
+                                <span className="sessions-page__catalog-date">{session.time}</span>
+                                <span className="sessions-page__catalog-foot">{session.credits}</span>
+                                {!hideActionButton ? (
+                                  <button
+                                    type="button"
+                                    className="sessions-page__join-button"
+                                    disabled={
+                                      isJoiningSessionId === session.id ||
+                                      isCancellingSessionId === session.id
+                                    }
+                                    onClick={() =>
+                                      hasPendingRequest
+                                        ? handleCancelRequest(session, pendingRequestSessionId)
+                                        : handleJoinSession(session)
+                                    }
+                                  >
+                                    {isJoiningSessionId === session.id
+                                      ? "Joining..."
+                                      : isCancellingSessionId === session.id
+                                        ? "Cancelling..."
+                                        : hasPendingRequest
+                                          ? "Cancel"
+                                          : "Join"}
+                                  </button>
+                                ) : null}
+                              </article>
+                            );
+                          })()
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="sessions-page__empty">
+                        No sessions match this category yet.
+                      </div>
+                    )}
+                  </section>
+                ) : null}
+              </>
+            )}
           </div>
+        </div>
       </section>
     </ViewFrame>
   );

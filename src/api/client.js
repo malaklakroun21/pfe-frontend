@@ -113,6 +113,73 @@ export const sessionApi = {
   list() {
     return apiRequest("/sessions");
   },
+  listDirectory() {
+    return apiRequest("/sessions/explore");
+  },
+  request(payload) {
+    return apiRequest("/sessions/request", {
+      method: "POST",
+      body: payload,
+    });
+  },
+  cancel(sessionId) {
+    return apiRequest(`/sessions/${sessionId}/cancel`, {
+      method: "PATCH",
+    });
+  },
+};
+
+export const projectApi = {
+  list(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      searchParams.set(key, String(value));
+    });
+
+    const query = searchParams.toString();
+
+    return apiRequest(`/projects${query ? `?${query}` : ""}`);
+  },
+  create(payload) {
+    return apiRequest("/projects", {
+      method: "POST",
+      body: payload,
+    });
+  },
+  get(projectId) {
+    return apiRequest(`/projects/${projectId}`);
+  },
+  update(projectId, payload) {
+    return apiRequest(`/projects/${projectId}`, {
+      method: "PUT",
+      body: payload,
+    });
+  },
+  delete(projectId) {
+    return apiRequest(`/projects/${projectId}`, {
+      method: "DELETE",
+    });
+  },
+  join(projectId) {
+    return apiRequest(`/projects/${projectId}/join`, {
+      method: "POST",
+    });
+  },
+  leave(projectId) {
+    return apiRequest(`/projects/${projectId}/leave`, {
+      method: "POST",
+    });
+  },
+  removeMember(projectId, userId) {
+    return apiRequest(`/projects/${projectId}/members/${userId}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 export const messageApi = {

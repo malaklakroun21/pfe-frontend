@@ -42,6 +42,13 @@ function SidebarIcon({ name }) {
           <path d="M8 3.75v4M16 3.75v4M4 10.25h16" />
         </svg>
       );
+    case "projects":
+      return (
+        <svg className="dashboard-sidebar__icon" {...iconProps}>
+          <path d="M4.75 7.25h5.2l1.5 1.8h8.8v8.7a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2Z" />
+          <path d="M4.75 7.25v-.5a2 2 0 0 1 2-2h2.9l1.5 1.8" />
+        </svg>
+      );
     case "messages":
       return (
         <svg className="dashboard-sidebar__icon" {...iconProps}>

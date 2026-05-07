@@ -181,7 +181,7 @@ function DashboardHome() {
               <section className="dashboard-home__panel">
                 <div className="dashboard-home__panel-header">
                   <h2>Upcoming Sessions</h2>
-                  <button type="button" onClick={() => navigate("/app/sessions")}>
+                  <button type="button" onClick={() => navigate("/app/skills?tab=sessions")}>
                     View all
                   </button>
                 </div>

@@ -1,8 +1,12 @@
+import { mapOwnedSession } from "../Sessions/sessionViewModel.js";
+
 const PROFILE_TABS = [
   { key: "about", label: "About" },
   { key: "skills", label: "Skills" },
   { key: "portfolio", label: "Portfolio" },
   { key: "reviews", label: "Reviews" },
+  { key: "sessions", label: "Sessions", ownOnly: true },
+  { key: "projects", label: "Projects", ownOnly: true },
 ];
 
 export function getProfileRecordById(records, profileId) {
@@ -25,17 +29,24 @@ export function getProfilePreviewOptions(records) {
   }));
 }
 
-export function buildProfileViewModel(profileRecord) {
+export function buildProfileViewModel(profileRecord, options = {}) {
   if (!profileRecord) {
     return null;
   }
 
+  const isOwnProfile = options.isOwnProfile ?? false;
   const skills = Array.isArray(profileRecord.skills)
     ? profileRecord.skills.map(buildSkillViewModel)
     : [];
   const portfolio = buildPortfolioViewModel(profileRecord.portfolio);
   const reviews = Array.isArray(profileRecord.reviews)
     ? profileRecord.reviews.map(buildReviewViewModel)
+    : [];
+  const sessions = Array.isArray(profileRecord.sessions)
+    ? profileRecord.sessions.map((session) => buildSessionViewModel(session, profileRecord.id))
+    : [];
+  const projects = Array.isArray(profileRecord.projects)
+    ? profileRecord.projects.map(buildProjectViewModel)
     : [];
   const location = profileRecord.location ?? "Location not set";
   const memberSinceShortLabel = formatMonthYear(profileRecord.memberSince, "short");
@@ -69,13 +80,21 @@ export function buildProfileViewModel(profileRecord) {
     skills,
     portfolio,
     reviews,
-    tabs: PROFILE_TABS.filter((tab) =>
-      hasSectionContent(tab.key, {
-        aboutText: profileRecord.about,
-        skills,
-        portfolio,
-        reviews,
-      }),
+    sessions,
+    projects,
+    tabs: PROFILE_TABS.filter((tab) => !tab.ownOnly || isOwnProfile).filter((tab) =>
+      hasSectionContent(
+        tab.key,
+        {
+          aboutText: profileRecord.about,
+          skills,
+          portfolio,
+          reviews,
+          sessions,
+          projects,
+        },
+        { isOwnProfile },
+      ),
     ),
     avatarTheme: {
       from: profileRecord.avatarTheme?.from ?? "#d85317",
@@ -138,7 +157,37 @@ function buildReviewViewModel(review) {
   };
 }
 
-function hasSectionContent(sectionKey, { skills, portfolio, reviews }) {
+function buildSessionViewModel(session, viewerUserId) {
+  return mapOwnedSession(session, viewerUserId);
+}
+
+function buildProjectViewModel(project) {
+  const normalizedStatus = String(project.status || "OPEN").trim().toUpperCase();
+  const members = Array.isArray(project.members)
+    ? project.members.map((member) => ({
+        id: member.userId || member.id || "project-member",
+        userId: member.userId || "Unknown member",
+        joinedLabel: formatFullDate(member.joinedAt),
+      }))
+    : [];
+
+  return {
+    id: project.projectId || project.id,
+    projectId: project.projectId || project.id,
+    ownerId: project.ownerId || "",
+    title: project.title || "Untitled project",
+    description: project.description || "No description yet.",
+    requiredSkill: project.requiredSkill || "Not specified",
+    status: normalizedStatus.toLowerCase(),
+    statusLabel: formatProjectStatusLabel(normalizedStatus),
+    createdLabel: formatFullDate(project.createdAt),
+    updatedLabel: formatFullDate(project.updatedAt),
+    memberCount: members.length,
+    members,
+  };
+}
+
+function hasSectionContent(sectionKey, { skills, portfolio }, options = {}) {
   switch (sectionKey) {
     case "about":
       return true;
@@ -148,8 +197,26 @@ function hasSectionContent(sectionKey, { skills, portfolio, reviews }) {
       return portfolio.documents.length > 0 || portfolio.links.length > 0;
     case "reviews":
       return true;
+    case "sessions":
+      return options.isOwnProfile;
+    case "projects":
+      return options.isOwnProfile;
     default:
       return false;
+  }
+}
+
+function formatProjectStatusLabel(status) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return "In Progress";
+    case "COMPLETED":
+      return "Completed";
+    case "CANCELLED":
+      return "Cancelled";
+    case "OPEN":
+    default:
+      return "Open";
   }
 }
 

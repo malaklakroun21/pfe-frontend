@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { dashboardApi, userApi } from "../../../api/client.js";
-import { clearAuthSession } from "../../../authSession.js";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { dashboardApi, projectApi, sessionApi, userApi } from "../../../api/client.js";
+import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
 
@@ -19,6 +19,15 @@ function CalendarIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <rect x="3.75" y="5.75" width="16.5" height="14.5" rx="2.5" />
       <path d="M8 3.75v4M16 3.75v4M3.75 10.25h16.5" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 7.75v4.7l3.2 1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -83,6 +92,15 @@ function GlobeIcon() {
       <circle cx="12" cy="12" r="9" />
       <path d="M3.5 12h17" />
       <path d="M12 3c2.6 2.8 4 5.9 4 9s-1.4 6.2-4 9c-2.6-2.8-4-5.9-4-9s1.4-6.2 4-9Z" />
+    </svg>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M4.75 7.25h5.2l1.5 1.8h8.8v8.7a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2Z" />
+      <path d="M4.75 7.25v-.5a2 2 0 0 1 2-2h2.9l1.5 1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -378,7 +396,133 @@ function ReviewsTab({ profile }) {
   );
 }
 
-function ProfileContent({ profile, activeTabKey }) {
+function SessionsTab({ profile }) {
+  if (profile.sessions.length === 0) {
+    return (
+      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+        <h3>Sessions</h3>
+        <p>No sessions created yet.</p>
+      </article>
+    );
+  }
+
+  return (
+    <>
+      {profile.sessions.map((session) => (
+        <article key={session.id} className="my-profile-page__activity-card">
+          <div className="my-profile-page__activity-head">
+            <div className="my-profile-page__activity-copy">
+              <h3>{session.title}</h3>
+              <p>with {session.participantName}</p>
+            </div>
+
+            <span className={`my-profile-page__status-pill my-profile-page__status-pill--${session.status}`}>
+              {session.badge}
+            </span>
+          </div>
+
+          <div className="my-profile-page__activity-meta">
+            <span>
+              <CalendarIcon />
+              {session.date}
+            </span>
+
+            <span>
+              <ClockIcon />
+              {session.time}
+            </span>
+
+            <span>{session.duration}</span>
+            <strong>{session.credits}</strong>
+          </div>
+        </article>
+      ))}
+    </>
+  );
+}
+
+function ProjectsTab({ profile, onOpenProject }) {
+  if (profile.projects.length === 0) {
+    return (
+      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+        <h3>Projects</h3>
+        <p>No projects created yet.</p>
+      </article>
+    );
+  }
+
+  return (
+    <>
+      {profile.projects.map((project) => (
+        <article key={project.id} className="my-profile-page__activity-card">
+          <div className="my-profile-page__activity-head">
+            <div className="my-profile-page__activity-copy">
+              <h3>{project.title}</h3>
+              <p>{project.description}</p>
+            </div>
+
+            <span className={`my-profile-page__status-pill my-profile-page__status-pill--${project.status}`}>
+              {project.statusLabel}
+            </span>
+          </div>
+
+          <div className="my-profile-page__activity-meta">
+            <span>Project ID: {project.projectId}</span>
+            <span>Owner: {project.ownerId || "You"}</span>
+
+            <span>
+              <FolderIcon />
+              {project.requiredSkill}
+            </span>
+
+            <span>
+              <CalendarIcon />
+              {project.createdLabel}
+            </span>
+
+            <span>
+              <ClockIcon />
+              Updated {project.updatedLabel}
+            </span>
+
+            <span>{project.memberCount} member{project.memberCount === 1 ? "" : "s"}</span>
+          </div>
+
+          <div className="my-profile-page__project-members">
+            <strong className="my-profile-page__project-members-title">Members</strong>
+
+            {project.members.length > 0 ? (
+              <div className="my-profile-page__project-member-list">
+                {project.members.map((member) => (
+                  <div key={member.id} className="my-profile-page__project-member-item">
+                    <strong>{member.userId}</strong>
+                    <span>Joined {member.joinedLabel}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="my-profile-page__project-members-empty">
+                No members have joined this project yet.
+              </p>
+            )}
+          </div>
+
+          <div className="my-profile-page__activity-actions">
+            <button
+              type="button"
+              className="my-profile-page__activity-button"
+              onClick={() => onOpenProject(project.projectId)}
+            >
+              Open Project
+            </button>
+          </div>
+        </article>
+      ))}
+    </>
+  );
+}
+
+function ProfileContent({ profile, activeTabKey, isOwnProfile, onOpenProject }) {
   switch (activeTabKey) {
     case "skills":
       return <SkillsTab profile={profile} />;
@@ -386,6 +530,10 @@ function ProfileContent({ profile, activeTabKey }) {
       return <PortfolioTab profile={profile} />;
     case "reviews":
       return <ReviewsTab profile={profile} />;
+    case "sessions":
+      return isOwnProfile ? <SessionsTab profile={profile} /> : null;
+    case "projects":
+      return isOwnProfile ? <ProjectsTab profile={profile} onOpenProject={onOpenProject} /> : null;
     case "about":
     default:
       return <AboutTab profile={profile} />;
@@ -395,7 +543,8 @@ function ProfileContent({ profile, activeTabKey }) {
 function MyProfile() {
   const navigate = useNavigate();
   const { userId } = useParams();
-  const [activeTabKey, setActiveTabKey] = useState("about");
+  const { user } = useAuthSession();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profileRecord, setProfileRecord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -414,14 +563,40 @@ function MyProfile() {
                 return buildPublicProfileRecord(publicProfile, ratingSummary);
               },
             )
-          : await dashboardApi.getProfile();
+          : await dashboardApi.getProfile().then(async (ownProfile) => {
+              const [sessionsResult, projectsResult] = await Promise.allSettled([
+                sessionApi.list(),
+                projectApi.list({
+                  ownerId: ownProfile.id,
+                  limit: 100,
+                }),
+              ]);
+              const listedProjects =
+                projectsResult.status === "fulfilled" && Array.isArray(projectsResult.value?.items)
+                  ? projectsResult.value.items
+                  : [];
+              const projectDetailsResults = await Promise.allSettled(
+                listedProjects.map((project) => projectApi.get(project.projectId)),
+              );
+              const detailedProjects = projectDetailsResults
+                .filter((result) => result.status === "fulfilled")
+                .map((result) => result.value);
+
+              return {
+                ...ownProfile,
+                sessions:
+                  sessionsResult.status === "fulfilled" && Array.isArray(sessionsResult.value)
+                    ? sessionsResult.value
+                    : [],
+                projects: detailedProjects.length > 0 ? detailedProjects : listedProjects,
+              };
+            });
 
         if (!isActive) {
           return;
         }
 
         setProfileRecord(profile);
-        setActiveTabKey("about");
       } catch (error) {
         if (!isActive) {
           return;
@@ -440,10 +615,10 @@ function MyProfile() {
     return () => {
       isActive = false;
     };
-  }, [userId]);
+  }, [userId, user?.userId]);
 
-  const activeProfile = buildProfileViewModel(profileRecord);
   const isOwnProfile = !userId;
+  const activeProfile = buildProfileViewModel(profileRecord, { isOwnProfile });
 
   if (isLoading) {
     return <p>Loading profile...</p>;
@@ -458,8 +633,9 @@ function MyProfile() {
   }
 
   const visibleTabs = activeProfile.tabs;
-  const currentTabKey = visibleTabs.some((tab) => tab.key === activeTabKey)
-    ? activeTabKey
+  const requestedTabKey = searchParams.get("tab") || "about";
+  const currentTabKey = visibleTabs.some((tab) => tab.key === requestedTabKey)
+    ? requestedTabKey
     : visibleTabs[0]?.key ?? "about";
 
   function handleLogout() {
@@ -469,6 +645,18 @@ function MyProfile() {
 
   function handleMessageProfileOwner() {
     navigate(`/app/messages?user=${encodeURIComponent(activeProfile.id)}`);
+  }
+
+  function handleCreateSession() {
+    navigate("/app/sessions");
+  }
+
+  function handleCreateProject() {
+    navigate("/app/projects?create=1");
+  }
+
+  function handleOpenProject(projectId) {
+    navigate(`/app/projects/${encodeURIComponent(projectId)}`);
   }
 
   return (
@@ -553,22 +741,59 @@ function MyProfile() {
         ) : null}
       </section>
 
-      <nav className="my-profile-page__tabs" aria-label="Profile sections">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`my-profile-page__tab ${currentTabKey === tab.key ? "is-active" : ""}`}
-            aria-pressed={currentTabKey === tab.key}
-            onClick={() => setActiveTabKey(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <div className="my-profile-page__tabs-shell">
+        <nav className="my-profile-page__tabs" aria-label="Profile sections">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`my-profile-page__tab ${currentTabKey === tab.key ? "is-active" : ""}`}
+              aria-pressed={currentTabKey === tab.key}
+              onClick={() => {
+                const nextSearchParams = new URLSearchParams(searchParams);
+
+                if (tab.key === "about") {
+                  nextSearchParams.delete("tab");
+                } else {
+                  nextSearchParams.set("tab", tab.key);
+                }
+
+                setSearchParams(nextSearchParams, { replace: true });
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {isOwnProfile ? (
+          <div className="my-profile-page__tab-actions">
+            <button
+              type="button"
+              className="my-profile-page__tab-action-button"
+              onClick={handleCreateSession}
+            >
+              Create Session
+            </button>
+
+            <button
+              type="button"
+              className="my-profile-page__tab-action-button my-profile-page__tab-action-button--primary"
+              onClick={handleCreateProject}
+            >
+              Create Project
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <section className="my-profile-page__body">
-        <ProfileContent profile={activeProfile} activeTabKey={currentTabKey} />
+        <ProfileContent
+          profile={activeProfile}
+          activeTabKey={currentTabKey}
+          isOwnProfile={isOwnProfile}
+          onOpenProject={handleOpenProject}
+        />
       </section>
     </div>
   );

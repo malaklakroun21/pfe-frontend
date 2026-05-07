@@ -46,23 +46,25 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const effectiveSelectedSkillId = selectedSkillId || skillOptions[0]?.id || "";
-  const selectedSkillFromOptions =
-    skillOptions.find((skill) => skill.id === effectiveSelectedSkillId) ?? null;
   const normalizedCustomSkillName = customSkillName.trim();
+  const selectedSkillFromOption =
+    skillOptions.find((skill) => skill.id === selectedSkillId) ?? null;
+  const selectedSkillFromTypedName =
+    skillOptions.find(
+      (skill) => skill.label.trim().toLowerCase() === normalizedCustomSkillName.toLowerCase(),
+    ) ?? null;
   const selectedSkill =
-    selectedSkillFromOptions ??
-    (normalizedCustomSkillName
-      ? {
+    normalizedCustomSkillName
+      ? (selectedSkillFromTypedName ?? {
           id: "custom-skill",
           skillId: "",
           label: normalizedCustomSkillName,
           description: "Manual validation request",
-        }
-      : null);
+        })
+      : selectedSkillFromOption;
   const recommendedMentorId = getRecommendedMentorId(
     mentorOptions,
-    selectedSkillFromOptions?.id || effectiveSelectedSkillId
+    selectedSkillFromTypedName?.id || selectedSkillFromOption?.id || ""
   );
   const mentorStillExists = mentorOptions.some((mentor) => mentor.id === selectedMentorId);
   const effectiveSelectedMentorId = mentorStillExists
@@ -145,46 +147,31 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
         return (
           <div className="validation-page__wizard-body">
             <div className="validation-page__wizard-copy">
-              <h4>Select a skill to validate</h4>
+              <h4>Write the skill you want to validate</h4>
+              <p>Type your skill yourself. You do not need to choose it from the list.</p>
             </div>
 
-            {skillOptions.length > 0 ? (
-              <div className="validation-page__wizard-option-list">
-                {skillOptions.map((skill) => (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    className={`validation-page__wizard-option ${
-                      effectiveSelectedSkillId === skill.id ? "is-selected" : ""
-                    }`}
-                    onClick={() => setSelectedSkillId(skill.id)}
-                  >
-                    <strong>{skill.label}</strong>
-                    {skill.description ? <span>{skill.description}</span> : null}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="validation-page__wizard-empty-state">
-                  <strong>No backend skill found yet.</strong>
-                  <p>
-                    This account does not have a saved skill to validate yet. Enter the skill name
-                    manually to continue.
-                  </p>
-                </div>
+            <label className="validation-page__wizard-field">
+              <span>Skill name</span>
+              <input
+                type="text"
+                placeholder="e.g. Node.js API Development"
+                value={customSkillName}
+                onChange={(event) => {
+                  setCustomSkillName(event.target.value);
+                  if (selectedSkillId) {
+                    setSelectedSkillId("");
+                  }
+                }}
+              />
+            </label>
 
-                <label className="validation-page__wizard-field">
-                  <span>Skill name</span>
-                  <input
-                    type="text"
-                    placeholder="e.g. Node.js API Development"
-                    value={customSkillName}
-                    onChange={(event) => setCustomSkillName(event.target.value)}
-                  />
-                </label>
-              </>
-            )}
+            {skillOptions.length === 0 ? (
+              <div className="validation-page__wizard-empty-state">
+                <strong>No backend skill found yet.</strong>
+                <p>Your typed skill will be sent manually for validation.</p>
+              </div>
+            ) : null}
           </div>
         );
       case "choose-mentor":

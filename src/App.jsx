@@ -18,6 +18,7 @@ import DashboardHome from './component/Dashboard/DashboardHome/DashboardHome.jsx
 import MyProfile from './component/Dashboard/MySkills/MySkills.jsx'
 import Explore from './component/Dashboard/Explore/Explore.jsx'
 import Sessions from './component/Dashboard/Sessions/Sessions.jsx'
+import Projects from './component/Dashboard/Projects/Projects.jsx'
 import Messages from './component/Dashboard/Messages/Messages.jsx'
 import Credits from './component/Dashboard/Credits/Credits.jsx'
 import Validation from './component/Dashboard/Validation/Validation.jsx'
@@ -229,6 +230,9 @@ const App = () => {
         </Route>
         <Route path="explore" element={<Explore />} />
         <Route path="sessions" element={<Sessions />} />
+        <Route path="sessions/:categoryKey" element={<Sessions />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="projects/:projectId" element={<Projects />} />
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="*" element={<Navigate to="/app" replace />} />

@@ -3,6 +3,7 @@ export const dashboardSectionKeys = [
   "skills",
   "explore",
   "sessions",
+  "projects",
   "messages",
   "credits",
   "validation",
@@ -100,7 +101,7 @@ export const dashboardSections = {
     icon: "sessions",
     title: "Sessions",
     subtitle:
-      "Manage your booked sessions, upcoming meetings, and future availability windows.",
+      "Browse the sessions happening across the app and discover who is learning what.",
     stats: [
       { label: "Planned sessions", value: "07", accent: "warm" },
       { label: "Completed", value: "21", accent: "soft" },
@@ -108,12 +109,36 @@ export const dashboardSections = {
     ],
     cards: [
       {
-        title: "Upcoming",
-        text: "Your next 1:1 mentorship starts tomorrow morning.",
+        title: "Community feed",
+        text: "See the latest sessions booked across mentors and learners.",
       },
       {
-        title: "Reminder",
-        text: "Open more Friday slots if you want to earn extra credits.",
+        title: "Discovery",
+        text: "Open profiles directly from a session to start a new conversation.",
+      },
+    ],
+  },
+  projects: {
+    key: "projects",
+    route: "/app/projects",
+    navLabel: "Projects",
+    icon: "projects",
+    title: "Projects",
+    subtitle:
+      "Create collaborative projects, join open workspaces, and manage members from one place.",
+    stats: [
+      { label: "Open calls", value: "06", accent: "warm" },
+      { label: "In progress", value: "03", accent: "soft" },
+      { label: "Completed", value: "11", accent: "dark" },
+    ],
+    cards: [
+      {
+        title: "Collaboration",
+        text: "Share a project idea and let the right members join quickly.",
+      },
+      {
+        title: "Ownership",
+        text: "Keep track of members, status changes, and project delivery.",
       },
     ],
   },
