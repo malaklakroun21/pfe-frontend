@@ -71,6 +71,12 @@ export const userApi = {
   getCurrentUser() {
     return apiRequest("/users/me");
   },
+  getUserById(userId) {
+    return apiRequest(`/users/${userId}`);
+  },
+  getUserRatings(userId) {
+    return apiRequest(`/users/${userId}/ratings`);
+  },
   getAlgerianCities() {
     return apiRequest("/users/location-options/algeria");
   },

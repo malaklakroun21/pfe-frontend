@@ -56,6 +56,7 @@ export function buildProfileViewModel(profileRecord) {
     memberSinceShortLabel,
     memberSinceLabel,
     creditsLabel: String(profileRecord.credits ?? 0),
+    showCredits: profileRecord.showCredits ?? true,
     aboutHeading: "About Me",
     detailsHeading: "Details",
     aboutText: profileRecord.about ?? "No bio added yet.",
@@ -93,6 +94,7 @@ function buildSkillViewModel(skill) {
     proficiency,
     validationState,
     isValidated: validationState === "validated",
+    showAction: skill.showAction ?? validationState !== "validated",
     validationLabel: validationState === "validated" ? "Validated" : "Request Validation",
   };
 }

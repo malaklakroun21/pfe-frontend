@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { messageApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
-import { useNotificationsState } from "../Notifications/notificationsStore.js";
+import {
+  refreshNotifications,
+  useNotificationsState,
+} from "../Notifications/notificationsStore.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./Messages.css";
 
@@ -57,6 +60,32 @@ function formatParticipantStatus(participant) {
   }
 
   return `${String(participant.role).toLowerCase()} on Fenneky`;
+}
+
+function mapConversationSummary(conversation) {
+  return {
+    id: conversation.otherParticipant?.userId || conversation.conversationId,
+    initials: buildParticipantInitials(conversation.otherParticipant),
+    name: buildParticipantName(conversation.otherParticipant),
+    status: formatParticipantStatus(conversation.otherParticipant),
+    lastSeen: formatConversationTime(conversation.lastMessageAt),
+    preview: conversation.lastMessage?.content || "No messages yet.",
+    unread: (conversation.unreadCount || 0) > 0,
+    rawConversation: conversation,
+  };
+}
+
+function buildConversationItemFromParticipant(participant, options = {}) {
+  return {
+    id: participant?.userId || options.fallbackId || "",
+    initials: buildParticipantInitials(participant),
+    name: buildParticipantName(participant),
+    status: formatParticipantStatus(participant),
+    lastSeen: options.lastSeen || "Recently",
+    preview: options.preview || "No messages yet.",
+    unread: false,
+    rawConversation: null,
+  };
 }
 
 function SearchIcon() {
@@ -130,6 +159,7 @@ function SendIcon() {
 
 function Messages() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthSession();
   const { unreadCount } = useNotificationsState();
   const [conversationItems, setConversationItems] = useState([]);
@@ -141,6 +171,7 @@ function Messages() {
   const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const threadRef = useRef(null);
+  const preferredUserId = searchParams.get("user")?.trim() || "";
 
   useEffect(() => {
     let isActive = true;
@@ -156,19 +187,16 @@ function Messages() {
           return;
         }
 
-        const mappedConversations = (Array.isArray(conversations) ? conversations : []).map((conversation) => ({
-          id: conversation.otherParticipant?.userId || conversation.conversationId,
-          initials: buildParticipantInitials(conversation.otherParticipant),
-          name: buildParticipantName(conversation.otherParticipant),
-          status: formatParticipantStatus(conversation.otherParticipant),
-          lastSeen: formatConversationTime(conversation.lastMessageAt),
-          preview: conversation.lastMessage?.content || "No messages yet.",
-          unread: (conversation.unreadCount || 0) > 0,
-          rawConversation: conversation,
-        }));
+        const mappedConversations = (Array.isArray(conversations) ? conversations : []).map(
+          mapConversationSummary,
+        );
 
         setConversationItems(mappedConversations);
         setActiveConversationId((currentActiveId) => {
+          if (preferredUserId) {
+            return preferredUserId;
+          }
+
           if (currentActiveId && mappedConversations.some((conversation) => conversation.id === currentActiveId)) {
             return currentActiveId;
           }
@@ -193,7 +221,7 @@ function Messages() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [preferredUserId]);
 
   useEffect(() => {
     let isActive = true;
@@ -229,6 +257,23 @@ function Messages() {
           messages: mappedMessages,
         });
 
+        setConversationItems((current) => {
+          if (!conversation?.participant || current.some((item) => item.id === activeConversationId)) {
+            return current;
+          }
+
+          const latestMessage = mappedMessages[mappedMessages.length - 1];
+
+          return [
+            buildConversationItemFromParticipant(conversation.participant, {
+              fallbackId: activeConversationId,
+              lastSeen: latestMessage ? latestMessage.time : "Recently",
+              preview: latestMessage?.body || "No messages yet.",
+            }),
+            ...current,
+          ];
+        });
+
         const unreadIncomingMessages = (Array.isArray(conversation?.messages) ? conversation.messages : []).filter(
           (message) => message.senderId !== user.userId && !message.isRead,
         );
@@ -249,6 +294,8 @@ function Messages() {
                 : conversationItem,
             ),
           );
+
+          refreshNotifications();
         }
       } catch (error) {
         if (!isActive) {
@@ -283,7 +330,11 @@ function Messages() {
 
   const activeConversation =
     conversationItems.find((conversation) => conversation.id === activeConversationId) ??
-    conversationItems[0];
+    (activeThread?.participant
+      ? buildConversationItemFromParticipant(activeThread.participant, {
+          fallbackId: activeConversationId,
+        })
+      : conversationItems[0]);
 
   useEffect(() => {
     const threadNode = threadRef.current;
@@ -340,16 +391,7 @@ function Messages() {
       });
 
       setConversationItems(
-        (Array.isArray(refreshedConversations) ? refreshedConversations : []).map((conversation) => ({
-          id: conversation.otherParticipant?.userId || conversation.conversationId,
-          initials: buildParticipantInitials(conversation.otherParticipant),
-          name: buildParticipantName(conversation.otherParticipant),
-          status: formatParticipantStatus(conversation.otherParticipant),
-          lastSeen: formatConversationTime(conversation.lastMessageAt),
-          preview: conversation.lastMessage?.content || "No messages yet.",
-          unread: (conversation.unreadCount || 0) > 0,
-          rawConversation: conversation,
-        })),
+        (Array.isArray(refreshedConversations) ? refreshedConversations : []).map(mapConversationSummary),
       );
 
       setDraft("");
@@ -437,7 +479,16 @@ function Messages() {
             </div>
 
             <div className="messages-page__thread-actions">
-              <button type="button" className="messages-page__profile-button">
+              <button
+                type="button"
+                className="messages-page__profile-button"
+                onClick={() =>
+                  activeConversation?.id
+                    ? navigate(`/app/profile/${encodeURIComponent(activeConversation.id)}`)
+                    : undefined
+                }
+                disabled={!activeConversation?.id}
+              >
                 View Profile
               </button>
 

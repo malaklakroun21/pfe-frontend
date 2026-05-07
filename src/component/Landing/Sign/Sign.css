@@ -79,6 +79,75 @@
     box-shadow: 0 0 0 4px rgba(217, 141, 100, 0.12);
 }
 
+.Sign-role-picker {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.Sign-role-picker legend {
+    margin-bottom: 14px;
+    padding: 0;
+    color: #0f172a;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.Sign-role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.Sign-role-card {
+    position: relative;
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    border: 1px solid #f1d6c7;
+    border-radius: 22px;
+    background: #ffffff;
+    color: #0f172a;
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.Sign-role-card:hover {
+    transform: translateY(-1px);
+    border-color: #d98d64;
+    box-shadow: 0 12px 22px rgba(182, 154, 129, 0.12);
+}
+
+.Sign-role-card input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.Sign-role-card.is-selected {
+    border: 2px solid #df5a1c;
+    background: #fdf6e8;
+    box-shadow: 0 14px 26px rgba(214, 105, 39, 0.12);
+}
+
+.Sign-role-icon {
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+.Sign-role-label {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
 .Sign-submit {
     margin-top: 6px;
     height: 54px;
@@ -187,6 +256,10 @@
     .Sign-social-button {
         height: 58px;
         border-radius: 18px;
+    }
+
+    .Sign-role-grid {
+        grid-template-columns: 1fr;
     }
 
     .Sign-divider {

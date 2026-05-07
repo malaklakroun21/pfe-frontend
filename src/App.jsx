@@ -109,6 +109,7 @@ function SignupPage() {
   const { accessToken } = useAuthSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [selectedRole, setSelectedRole] = useState("LEARNER")
 
   if (accessToken) {
     return <Navigate to="/app" replace />
@@ -122,6 +123,8 @@ function SignupPage() {
     const email = event.target.elements.namedItem("email")?.value?.trim()
     const password = event.target.elements.namedItem("password")?.value || ""
     const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+    const role =
+      event.target.querySelector('input[name="role"]:checked')?.value || selectedRole || "LEARNER"
 
     if (!fullName || !email || !password || !confirmPassword) {
       setErrorMessage("Veuillez remplir tous les champs du formulaire.")
@@ -143,7 +146,7 @@ function SignupPage() {
         lastName,
         email,
         password,
-        role: "LEARNER",
+        role,
       })
 
       setAuthSession(session)
@@ -157,7 +160,12 @@ function SignupPage() {
 
   return (
     <div onSubmitCapture={handleSubmitCapture}>
-      <Sign isSubmitting={isSubmitting} errorMessage={errorMessage} />
+      <Sign
+        isSubmitting={isSubmitting}
+        errorMessage={errorMessage}
+        selectedRole={selectedRole}
+        onRoleChange={setSelectedRole}
+      />
     </div>
   )
 }
@@ -214,6 +222,7 @@ const App = () => {
         <Route index element={<DashboardHome />} />
         <Route element={<SharedHeaderLayout />}>
           <Route path="skills" element={<MyProfile />} />
+          <Route path="profile/:userId" element={<MyProfile />} />
           <Route path="credits" element={<Credits />} />
           <Route path="validation" element={<Validation />} />
           <Route path="settings" element={<Settings />} />

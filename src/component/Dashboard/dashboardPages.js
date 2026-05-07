@@ -58,6 +58,17 @@ export const dashboardSections = {
       },
     ],
   },
+  profile: {
+    key: "profile",
+    route: "/app/profile",
+    navLabel: "Profile",
+    icon: "profile",
+    title: "Profile",
+    headerTitle: "Profile",
+    subtitle: "Discover the public profile of a community member.",
+    stats: [],
+    cards: [],
+  },
   explore: {
     key: "explore",
     route: "/app/explore",

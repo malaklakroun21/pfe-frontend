@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { dashboardApi } from "../../../api/client.js";
+import { useNavigate, useParams } from "react-router-dom";
+import { dashboardApi, userApi } from "../../../api/client.js";
 import { clearAuthSession } from "../../../authSession.js";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
@@ -50,6 +50,14 @@ function LogoutIcon() {
   );
 }
 
+function MessageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M6.25 5.25h11.5A2.25 2.25 0 0 1 20 7.5v7a2.25 2.25 0 0 1-2.25 2.25H10l-4.75 3v-3H6.25A2.25 2.25 0 0 1 4 14.5v-7a2.25 2.25 0 0 1 2.25-2.25Z" />
+    </svg>
+  );
+}
+
 function ValidationIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -77,6 +85,130 @@ function GlobeIcon() {
       <path d="M12 3c2.6 2.8 4 5.9 4 9s-1.4 6.2-4 9c-2.6-2.8-4-5.9-4-9s1.4-6.2 4-9Z" />
     </svg>
   );
+}
+
+function toTitleCase(value = "") {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function uniqueStrings(values = []) {
+  return [...new Set((Array.isArray(values) ? values : []).map((value) => String(value).trim()))]
+    .filter(Boolean);
+}
+
+function decodeLocationId(value = "") {
+  const normalizedValue = String(value).trim();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (normalizedValue === "COUNTRY-DZ") {
+    return "Algeria";
+  }
+
+  return normalizedValue
+    .replace(/^CITY-[A-Z]{2}-/i, "")
+    .replace(/^COUNTRY-/i, "")
+    .toLowerCase()
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function buildPublicLocationLabel(profile = {}) {
+  const city = decodeLocationId(profile.cityId);
+  const country = decodeLocationId(profile.countryId);
+
+  if (city && country) {
+    return `${city}, ${country}`;
+  }
+
+  return city || country || "Location not set";
+}
+
+function buildPublicSkills(profile = {}) {
+  const publicSkills = uniqueStrings(
+    Array.isArray(profile.offeredSkills) && profile.offeredSkills.length > 0
+      ? profile.offeredSkills
+      : profile.wantedSkills,
+  );
+  const proficiency = profile.role === "MENTOR" ? "Mentor skill" : "Learning focus";
+
+  return publicSkills.map((skillName) => ({
+    id: `${profile.userId}-${skillName.toLowerCase().replace(/\s+/g, "-")}`,
+    name: skillName,
+    proficiency,
+    validationState: "pending",
+    showAction: false,
+  }));
+}
+
+function buildPublicPortfolio(profile = {}) {
+  const documents = [];
+  const links = [];
+
+  if (profile.resumeDownloadUrl || profile.resumeFileName) {
+    documents.push({
+      id: `${profile.userId}-resume`,
+      fileName: profile.resumeFileName || "Resume.pdf",
+      uploadedAt: profile.resumeUploadedAt,
+      href: profile.resumeDownloadUrl || "",
+    });
+  }
+
+  if (profile.portfolioUrl) {
+    links.push({
+      id: `${profile.userId}-portfolio`,
+      label: "Portfolio",
+      href: profile.portfolioUrl,
+    });
+  }
+
+  return {
+    documents,
+    links,
+  };
+}
+
+function buildPublicReviews(ratingSummary = {}) {
+  return (Array.isArray(ratingSummary.reviews) ? ratingSummary.reviews : []).map((review) => ({
+    id: review._id || `${review.sessionId}-${review.fromUser}`,
+    author: review.fromUser || "Community member",
+    reviewedAt: review.createdAt,
+    text: review.comment || "No written review yet.",
+    rating: typeof review.score === "number" ? review.score : 0,
+  }));
+}
+
+function buildPublicProfileRecord(profile = {}, ratingSummary = {}) {
+  const fullName =
+    [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim() ||
+    profile.userId ||
+    "Unknown User";
+
+  return {
+    id: profile.userId,
+    fullName,
+    roleLabel: toTitleCase(profile.role || "community member"),
+    rating: ratingSummary.averageRating ?? 0,
+    location: buildPublicLocationLabel(profile),
+    memberSince: profile.createdAt,
+    showCredits: false,
+    about: profile.bio || "",
+    languages: profile.languages || [],
+    responseTime: "Not specified",
+    skills: buildPublicSkills(profile),
+    portfolio: buildPublicPortfolio(profile),
+    reviews: buildPublicReviews(ratingSummary),
+  };
 }
 
 function AboutTab({ profile }) {
@@ -120,7 +252,7 @@ function SkillsTab({ profile }) {
               ) : null}
             </div>
 
-            {!skill.isValidated ? (
+            {skill.showAction ? (
               <button type="button" className="my-profile-page__skill-action">
                 {skill.validationLabel}
               </button>
@@ -262,6 +394,7 @@ function ProfileContent({ profile, activeTabKey }) {
 
 function MyProfile() {
   const navigate = useNavigate();
+  const { userId } = useParams();
   const [activeTabKey, setActiveTabKey] = useState("about");
   const [profileRecord, setProfileRecord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -275,13 +408,20 @@ function MyProfile() {
       setErrorMessage("");
 
       try {
-        const profile = await dashboardApi.getProfile();
+        const profile = userId
+          ? await Promise.all([userApi.getUserById(userId), userApi.getUserRatings(userId)]).then(
+              ([publicProfile, ratingSummary]) => {
+                return buildPublicProfileRecord(publicProfile, ratingSummary);
+              },
+            )
+          : await dashboardApi.getProfile();
 
         if (!isActive) {
           return;
         }
 
         setProfileRecord(profile);
+        setActiveTabKey("about");
       } catch (error) {
         if (!isActive) {
           return;
@@ -300,9 +440,10 @@ function MyProfile() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [userId]);
 
   const activeProfile = buildProfileViewModel(profileRecord);
+  const isOwnProfile = !userId;
 
   if (isLoading) {
     return <p>Loading profile...</p>;
@@ -324,6 +465,10 @@ function MyProfile() {
   function handleLogout() {
     clearAuthSession();
     navigate("/login", { replace: true });
+  }
+
+  function handleMessageProfileOwner() {
+    navigate(`/app/messages?user=${encodeURIComponent(activeProfile.id)}`);
   }
 
   return (
@@ -367,30 +512,45 @@ function MyProfile() {
             </div>
           </div>
 
-          <div className="my-profile-page__actions">
-            <button
-              type="button"
-              className="my-profile-page__action-button"
-              onClick={() => navigate("/app/settings")}
-            >
-              <EditIcon />
-              Edit Profile
-            </button>
+          {isOwnProfile ? (
+            <div className="my-profile-page__actions">
+              <button
+                type="button"
+                className="my-profile-page__action-button"
+                onClick={() => navigate("/app/settings")}
+              >
+                <EditIcon />
+                Edit Profile
+              </button>
 
-            <button
-              type="button"
-              className="my-profile-page__action-button my-profile-page__action-button--logout"
-              onClick={handleLogout}
-            >
-              <LogoutIcon />
-              Logout
-            </button>
+              <button
+                type="button"
+                className="my-profile-page__action-button my-profile-page__action-button--logout"
+                onClick={handleLogout}
+              >
+                <LogoutIcon />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="my-profile-page__actions">
+              <button
+                type="button"
+                className="my-profile-page__action-button my-profile-page__action-button--primary"
+                onClick={handleMessageProfileOwner}
+              >
+                <MessageIcon />
+                Message
+              </button>
+            </div>
+          )}
+        </div>
+
+        {activeProfile.showCredits ? (
+          <div className="my-profile-page__credits">
+            Credits: <strong>{activeProfile.creditsLabel}</strong>
           </div>
-        </div>
-
-        <div className="my-profile-page__credits">
-          Credits: <strong>{activeProfile.creditsLabel}</strong>
-        </div>
+        ) : null}
       </section>
 
       <nav className="my-profile-page__tabs" aria-label="Profile sections">

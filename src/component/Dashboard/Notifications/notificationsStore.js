@@ -7,6 +7,7 @@ import {
 } from "../../../authSession.js";
 
 const listeners = new Set();
+const POLLING_INTERVAL_MS = 15000;
 
 let notificationsSnapshot = {
   notifications: [],
@@ -16,6 +17,18 @@ let notificationsSnapshot = {
 };
 
 let loadPromise = null;
+let pollingIntervalId = null;
+let pollingSubscriberCount = 0;
+
+function handleNotificationsVisibilityRefresh() {
+  if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+    return;
+  }
+
+  if (hasAuthSession()) {
+    refreshNotifications();
+  }
+}
 
 function emitChange() {
   listeners.forEach((listener) => listener());
@@ -51,6 +64,46 @@ async function runNotificationRequest(requestFn, fallbackValue) {
     }));
 
     return fallbackValue;
+  }
+}
+
+function startNotificationsPolling() {
+  if (typeof window === "undefined" || pollingIntervalId || !hasAuthSession()) {
+    return;
+  }
+
+  pollingIntervalId = window.setInterval(() => {
+    handleNotificationsVisibilityRefresh();
+  }, POLLING_INTERVAL_MS);
+
+  window.addEventListener("focus", handleNotificationsVisibilityRefresh);
+  document.addEventListener("visibilitychange", handleNotificationsVisibilityRefresh);
+}
+
+function stopNotificationsPolling() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (pollingIntervalId) {
+    window.clearInterval(pollingIntervalId);
+    pollingIntervalId = null;
+  }
+
+  window.removeEventListener("focus", handleNotificationsVisibilityRefresh);
+  document.removeEventListener("visibilitychange", handleNotificationsVisibilityRefresh);
+}
+
+function retainNotificationsPolling() {
+  pollingSubscriberCount += 1;
+  startNotificationsPolling();
+}
+
+function releaseNotificationsPolling() {
+  pollingSubscriberCount = Math.max(0, pollingSubscriberCount - 1);
+
+  if (pollingSubscriberCount === 0) {
+    stopNotificationsPolling();
   }
 }
 
@@ -142,6 +195,7 @@ export async function deleteNotification(notificationId) {
 
 subscribeAuthSession(() => {
   if (!hasAuthSession()) {
+    stopNotificationsPolling();
     updateSnapshot(() => ({
       notifications: [],
       isLoading: false,
@@ -152,6 +206,9 @@ subscribeAuthSession(() => {
   }
 
   refreshNotifications();
+  if (pollingSubscriberCount > 0) {
+    startNotificationsPolling();
+  }
 });
 
 export function useNotificationsState() {
@@ -166,6 +223,18 @@ export function useNotificationsState() {
       refreshNotifications();
     }
   }, [snapshot.hasLoaded, snapshot.isLoading]);
+
+  useEffect(() => {
+    if (!hasAuthSession()) {
+      return undefined;
+    }
+
+    retainNotificationsPolling();
+
+    return () => {
+      releaseNotificationsPolling();
+    };
+  }, []);
 
   return {
     ...snapshot,

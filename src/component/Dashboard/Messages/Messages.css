@@ -265,6 +265,11 @@
   border-color: rgba(221, 154, 123, 0.95);
 }
 
+.messages-page__profile-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .messages-page__icon-button {
   position: relative;
   display: inline-grid;

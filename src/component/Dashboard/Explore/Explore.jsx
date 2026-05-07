@@ -244,7 +244,11 @@ function Explore() {
                     <div className="explore-page__card-footer">
                       <span className="explore-page__price">{mentor.price}</span>
 
-                      <button type="button" className="explore-page__profile-button">
+                      <button
+                        type="button"
+                        className="explore-page__profile-button"
+                        onClick={() => navigate(`/app/profile/${encodeURIComponent(mentor.id)}`)}
+                      >
                         View Profile
                       </button>
                     </div>

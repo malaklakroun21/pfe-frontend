@@ -149,6 +149,16 @@
   background: #fff7f1;
 }
 
+.my-profile-page__action-button--primary {
+  border-color: #df5a1c;
+  background: #df5a1c;
+  color: #ffffff;
+}
+
+.my-profile-page__action-button--primary:hover {
+  background: #c94f17;
+}
+
 .my-profile-page__action-button--logout {
   border-color: #f2c8b4;
   color: #a13e12;

@@ -1,7 +1,25 @@
 import { Link } from "react-router-dom";
 import "./Sign.css";
 
-function Sign({ isSubmitting = false, errorMessage = "" }) {
+const roleOptions = [
+  {
+    value: "LEARNER",
+    label: "Learn",
+    icon: "\u{1F4DA}",
+  },
+  {
+    value: "MENTOR",
+    label: "Mentor",
+    icon: "\u{1F9D1}\u200D\u{1F3EB}",
+  },
+];
+
+function Sign({
+  isSubmitting = false,
+  errorMessage = "",
+  selectedRole = "LEARNER",
+  onRoleChange = () => {},
+}) {
   return (
     <section className="Sign">
       <div className="Sign-container">
@@ -50,6 +68,31 @@ function Sign({ isSubmitting = false, errorMessage = "" }) {
               placeholder="Confirm Your Password"
             />
           </div>
+
+          <fieldset className="Sign-role-picker">
+            <legend>I want to...</legend>
+
+            <div className="Sign-role-grid">
+              {roleOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`Sign-role-card ${selectedRole === option.value ? "is-selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option.value}
+                    checked={selectedRole === option.value}
+                    onChange={() => onRoleChange(option.value)}
+                  />
+                  <span className="Sign-role-icon" aria-hidden="true">
+                    {option.icon}
+                  </span>
+                  <span className="Sign-role-label">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {errorMessage ? <p>{errorMessage}</p> : null}
 
