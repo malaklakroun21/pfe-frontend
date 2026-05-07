@@ -141,13 +141,17 @@ function DashboardHome() {
   const upcomingSessions = pageData?.upcomingSessions || [];
   const recommendedSkills = pageData?.recommendedSkills || [];
   const welcomeName = pageData?.welcome?.firstName || "Member";
+  const isFirstVisit = Boolean(pageData?.welcome?.isFirstVisit);
   const creditsAvailable = pageData?.creditsAvailable ?? 0;
+  const welcomeHeading = isFirstVisit
+    ? `Welcome, ${welcomeName}!`
+    : `Welcome back, ${welcomeName}!`;
 
   return (
     <ViewFrame header={<Header />}>
       <section className="dashboard-home">
         <div className="dashboard-home__hero">
-          <h1>Welcome back, {welcomeName}!</h1>
+          <h1>{welcomeHeading}</h1>
           <p>You have {creditsAvailable} credits available</p>
         </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../../api/client.js";
+import { clearAuthSession } from "../../../authSession.js";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
 
@@ -35,6 +36,16 @@ function EditIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <path d="m4.75 19.25 3.9-.78L18 9.12a1.9 1.9 0 0 0 0-2.68l-.45-.44a1.9 1.9 0 0 0-2.68 0l-9.35 9.35-.77 3.9Z" />
       <path d="m13.5 7.5 3 3" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M9 4.75H7.75A2.75 2.75 0 0 0 5 7.5v9a2.75 2.75 0 0 0 2.75 2.75H9" />
+      <path d="M13 8.5 18.25 12 13 15.5" />
+      <path d="M18 12H9" />
     </svg>
   );
 }
@@ -310,6 +321,11 @@ function MyProfile() {
     ? activeTabKey
     : visibleTabs[0]?.key ?? "about";
 
+  function handleLogout() {
+    clearAuthSession();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="my-profile-page">
       <section className="my-profile-page__hero">
@@ -351,14 +367,25 @@ function MyProfile() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="my-profile-page__edit-button"
-            onClick={() => navigate("/app/settings")}
-          >
-            <EditIcon />
-            Edit Profile
-          </button>
+          <div className="my-profile-page__actions">
+            <button
+              type="button"
+              className="my-profile-page__action-button"
+              onClick={() => navigate("/app/settings")}
+            >
+              <EditIcon />
+              Edit Profile
+            </button>
+
+            <button
+              type="button"
+              className="my-profile-page__action-button my-profile-page__action-button--logout"
+              onClick={handleLogout}
+            >
+              <LogoutIcon />
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="my-profile-page__credits">
