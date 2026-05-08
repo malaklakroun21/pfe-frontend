@@ -515,6 +515,122 @@
   margin-top: 18px;
 }
 
+.my-profile-page__status-card,
+.my-profile-page__project-create-card,
+.my-profile-page__session-create-card {
+  display: grid;
+  gap: 18px;
+}
+
+.my-profile-page__success-message,
+.my-profile-page__error-message {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.my-profile-page__status-card .my-profile-page__success-message,
+.my-profile-page__status-card .my-profile-page__error-message,
+.my-profile-page__project-create-card .my-profile-page__error-message,
+.my-profile-page__session-create-card .my-profile-page__error-message {
+  margin: 0;
+}
+
+.my-profile-page__success-message {
+  color: #0b7a46;
+}
+
+.my-profile-page__error-message {
+  color: #c2410c;
+}
+
+.my-profile-page__project-create-head h3,
+.my-profile-page__session-create-head h3 {
+  margin: 6px 0 0;
+  color: #0f172a;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  line-height: 1.2;
+}
+
+.my-profile-page__project-form,
+.my-profile-page__session-form {
+  display: grid;
+  gap: 18px;
+}
+
+.my-profile-page__project-form-grid,
+.my-profile-page__session-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.my-profile-page__project-field,
+.my-profile-page__session-field {
+  display: grid;
+  gap: 8px;
+}
+
+.my-profile-page__project-field--full,
+.my-profile-page__session-field--full {
+  grid-column: 1 / -1;
+}
+
+.my-profile-page__project-field span,
+.my-profile-page__session-field span {
+  color: #6f4b33;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.my-profile-page__project-field input,
+.my-profile-page__project-field select,
+.my-profile-page__project-field textarea,
+.my-profile-page__session-field input,
+.my-profile-page__session-field select,
+.my-profile-page__session-field textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 16px;
+  border: 1px solid rgba(236, 207, 188, 0.95);
+  border-radius: 18px;
+  background: #fffdfb;
+  color: #0f172a;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.my-profile-page__project-field textarea,
+.my-profile-page__session-field textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
+.my-profile-page__project-field input:focus,
+.my-profile-page__project-field select:focus,
+.my-profile-page__project-field textarea:focus,
+.my-profile-page__session-field input:focus,
+.my-profile-page__session-field select:focus,
+.my-profile-page__session-field textarea:focus {
+  outline: 2px solid rgba(223, 90, 28, 0.18);
+  border-color: #df5a1c;
+}
+
+.my-profile-page__project-form-actions,
+.my-profile-page__session-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.my-profile-page__session-detail-copy {
+  margin: 18px 0 0;
+  color: #7f2e0a;
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
 .my-profile-page__project-members {
   margin-top: 18px;
   padding-top: 18px;
@@ -576,6 +692,21 @@
 
 .my-profile-page__activity-button:hover {
   background: #fff7f1;
+}
+
+.my-profile-page__activity-button--ghost {
+  border-color: rgba(223, 90, 28, 0.2);
+  color: #b45309;
+}
+
+.my-profile-page__activity-button--primary {
+  border-color: #df5a1c;
+  background: #df5a1c;
+  color: #ffffff;
+}
+
+.my-profile-page__activity-button--primary:hover {
+  background: #c94f17;
 }
 
 .my-profile-page__status-pill {
@@ -881,6 +1012,11 @@
     align-items: flex-start;
   }
 
+  .my-profile-page__project-form-grid,
+  .my-profile-page__session-form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .my-profile-page__skill-action {
     width: 100%;
   }
@@ -899,6 +1035,12 @@
   .my-profile-page__tab-action-button,
   .my-profile-page__activity-button {
     width: 100%;
+  }
+
+  .my-profile-page__project-form-actions,
+  .my-profile-page__session-form-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .my-profile-page__skill-card {

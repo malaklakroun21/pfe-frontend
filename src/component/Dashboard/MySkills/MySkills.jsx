@@ -5,6 +5,28 @@ import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
 
+const PROJECT_STATUS_OPTIONS = [
+  { value: "OPEN", label: "Open" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const EMPTY_PROJECT_FORM = {
+  title: "",
+  requiredSkill: "",
+  status: "OPEN",
+  description: "",
+};
+
+const EMPTY_SESSION_FORM = {
+  teacherId: "",
+  skill: "",
+  duration: "1",
+  date: "",
+  message: "",
+};
+
 function LocationIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -396,18 +418,160 @@ function ReviewsTab({ profile }) {
   );
 }
 
-function SessionsTab({ profile }) {
-  if (profile.sessions.length === 0) {
-    return (
-      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
-        <h3>Sessions</h3>
-        <p>No sessions created yet.</p>
-      </article>
-    );
-  }
-
+function SessionsTab({
+  profile,
+  isCreateFormOpen,
+  createSessionForm,
+  onChangeCreateSessionField,
+  onSubmitCreateSession,
+  onCancelCreateSession,
+  isCreatingSession,
+  createSessionError,
+  sessionActionError,
+  onOpenSession,
+  selectedSession,
+  onCloseSession,
+  onDeleteSession,
+  isDeletingSessionId,
+}) {
   return (
     <>
+      {sessionActionError ? (
+        <article className="my-profile-page__content-card my-profile-page__status-card">
+          <p className="my-profile-page__error-message">{sessionActionError}</p>
+        </article>
+      ) : null}
+
+      {isCreateFormOpen ? (
+        <article className="my-profile-page__content-card my-profile-page__session-create-card">
+          <div className="my-profile-page__session-create-head">
+            <div>
+              <p className="my-profile-page__content-eyebrow">New session</p>
+              <h3>Create a session request</h3>
+            </div>
+          </div>
+
+          {createSessionError ? (
+            <p className="my-profile-page__error-message">{createSessionError}</p>
+          ) : null}
+
+          <form className="my-profile-page__session-form" onSubmit={onSubmitCreateSession}>
+            <div className="my-profile-page__session-form-grid">
+              <label className="my-profile-page__session-field">
+                <span>Teacher ID</span>
+                <input
+                  type="text"
+                  value={createSessionForm.teacherId}
+                  onChange={(event) => onChangeCreateSessionField("teacherId", event.target.value)}
+                  placeholder="e.g. mentor001"
+                  required
+                />
+              </label>
+
+              <label className="my-profile-page__session-field">
+                <span>Skill</span>
+                <input
+                  type="text"
+                  minLength={2}
+                  value={createSessionForm.skill}
+                  onChange={(event) => onChangeCreateSessionField("skill", event.target.value)}
+                  placeholder="e.g. React"
+                  required
+                />
+              </label>
+
+              <label className="my-profile-page__session-field">
+                <span>Duration</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={createSessionForm.duration}
+                  onChange={(event) => onChangeCreateSessionField("duration", event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="my-profile-page__session-field">
+                <span>Date</span>
+                <input
+                  type="datetime-local"
+                  value={createSessionForm.date}
+                  onChange={(event) => onChangeCreateSessionField("date", event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="my-profile-page__session-field my-profile-page__session-field--full">
+                <span>Message</span>
+                <textarea
+                  rows="5"
+                  value={createSessionForm.message}
+                  onChange={(event) => onChangeCreateSessionField("message", event.target.value)}
+                  placeholder="Describe what you want to learn in this session."
+                />
+              </label>
+            </div>
+
+            <div className="my-profile-page__session-form-actions">
+              <button
+                type="button"
+                className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+                onClick={onCancelCreateSession}
+                disabled={isCreatingSession}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="my-profile-page__activity-button my-profile-page__activity-button--primary"
+                disabled={isCreatingSession}
+              >
+                {isCreatingSession ? "Creating..." : "Create Session"}
+              </button>
+            </div>
+          </form>
+        </article>
+      ) : null}
+
+      {selectedSession ? (
+        <article className="my-profile-page__content-card my-profile-page__session-detail-card">
+          <div className="my-profile-page__activity-head">
+            <div className="my-profile-page__activity-copy">
+              <h3>{selectedSession.title}</h3>
+              <p>with {selectedSession.participantName}</p>
+            </div>
+
+            <button
+              type="button"
+              className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+              onClick={onCloseSession}
+              disabled={isDeletingSessionId === selectedSession.id}
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="my-profile-page__activity-meta">
+            <span>Status: {selectedSession.badge}</span>
+            <span>Date: {selectedSession.date}</span>
+            <span>Time: {selectedSession.time}</span>
+            <span>Duration: {selectedSession.duration}</span>
+            <span>Credits: {selectedSession.credits}</span>
+          </div>
+
+          <p className="my-profile-page__session-detail-copy">{selectedSession.description}</p>
+        </article>
+      ) : null}
+
+      {profile.sessions.length === 0 && !isCreateFormOpen ? (
+        <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+          <h3>Sessions</h3>
+          <p>No sessions created yet.</p>
+        </article>
+      ) : null}
+
       {profile.sessions.map((session) => (
         <article key={session.id} className="my-profile-page__activity-card">
           <div className="my-profile-page__activity-head">
@@ -435,24 +599,198 @@ function SessionsTab({ profile }) {
             <span>{session.duration}</span>
             <strong>{session.credits}</strong>
           </div>
+
+          <div className="my-profile-page__activity-actions">
+            {session.canDelete ? (
+              <button
+                type="button"
+                className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+                onClick={() => onDeleteSession(session.id)}
+                disabled={isDeletingSessionId === session.id}
+              >
+                {isDeletingSessionId === session.id ? "Deleting..." : "Delete Session"}
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              className="my-profile-page__activity-button"
+              onClick={() => onOpenSession(session.id)}
+              disabled={isDeletingSessionId === session.id}
+            >
+              Open Session
+            </button>
+          </div>
         </article>
       ))}
     </>
   );
 }
 
-function ProjectsTab({ profile, onOpenProject }) {
-  if (profile.projects.length === 0) {
-    return (
-      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
-        <h3>Projects</h3>
-        <p>No projects created yet.</p>
-      </article>
-    );
-  }
-
+function ProjectsTab({
+  profile,
+  isCreateFormOpen,
+  createProjectForm,
+  onChangeCreateProjectField,
+  onSubmitCreateProject,
+  onCancelCreateProject,
+  isCreatingProject,
+  createProjectError,
+  projectActionError,
+  onOpenProject,
+  onCancelProject,
+  isCancellingProjectId,
+  selectedProject,
+  isLoadingProjectDetail,
+  projectDetailError,
+  onCloseProject,
+}) {
   return (
     <>
+      {projectActionError ? (
+        <article className="my-profile-page__content-card my-profile-page__status-card">
+          <p className="my-profile-page__error-message">{projectActionError}</p>
+        </article>
+      ) : null}
+
+      {isCreateFormOpen ? (
+        <article className="my-profile-page__content-card my-profile-page__project-create-card">
+          <div className="my-profile-page__project-create-head">
+            <div>
+              <p className="my-profile-page__content-eyebrow">New project</p>
+              <h3>Create a project workspace</h3>
+            </div>
+          </div>
+
+          {createProjectError ? (
+            <p className="my-profile-page__error-message">{createProjectError}</p>
+          ) : null}
+
+          <form className="my-profile-page__project-form" onSubmit={onSubmitCreateProject}>
+            <div className="my-profile-page__project-form-grid">
+              <label className="my-profile-page__project-field">
+                <span>Title</span>
+                <input
+                  type="text"
+                  minLength={3}
+                  value={createProjectForm.title}
+                  onChange={(event) => onChangeCreateProjectField("title", event.target.value)}
+                  placeholder="e.g. Build a Fenneky mobile dashboard"
+                  required
+                />
+              </label>
+
+              <label className="my-profile-page__project-field">
+                <span>Required skill</span>
+                <input
+                  type="text"
+                  value={createProjectForm.requiredSkill}
+                  onChange={(event) =>
+                    onChangeCreateProjectField("requiredSkill", event.target.value)
+                  }
+                  placeholder="e.g. React Native"
+                />
+              </label>
+
+              <label className="my-profile-page__project-field">
+                <span>Status</span>
+                <select
+                  value={createProjectForm.status}
+                  onChange={(event) => onChangeCreateProjectField("status", event.target.value)}
+                >
+                  {PROJECT_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="my-profile-page__project-field my-profile-page__project-field--full">
+                <span>Description</span>
+                <textarea
+                  rows="5"
+                  value={createProjectForm.description}
+                  onChange={(event) => onChangeCreateProjectField("description", event.target.value)}
+                  placeholder="Describe the project, the goal, and what kind of member help you need."
+                />
+              </label>
+            </div>
+
+            <div className="my-profile-page__project-form-actions">
+              <button
+                type="button"
+                className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+                onClick={onCancelCreateProject}
+                disabled={isCreatingProject}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="my-profile-page__activity-button my-profile-page__activity-button--primary"
+                disabled={isCreatingProject}
+              >
+                {isCreatingProject ? "Creating..." : "Create Project"}
+              </button>
+            </div>
+          </form>
+        </article>
+      ) : null}
+
+      {selectedProject ? (
+        <article className="my-profile-page__content-card my-profile-page__project-detail-card">
+          <div className="my-profile-page__activity-head">
+            <div className="my-profile-page__activity-copy">
+              <h3>{selectedProject.title}</h3>
+              <p>{selectedProject.description || "No description yet."}</p>
+            </div>
+
+            <button
+              type="button"
+              className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+              onClick={onCloseProject}
+              disabled={isLoadingProjectDetail}
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="my-profile-page__activity-meta">
+            <span>Status: {selectedProject.status}</span>
+            <span>Skill: {selectedProject.requiredSkill || "Not specified"}</span>
+            <span>Created: {selectedProject.createdAt ? new Date(selectedProject.createdAt).toLocaleDateString() : "N/A"}</span>
+            <span>Updated: {selectedProject.updatedAt ? new Date(selectedProject.updatedAt).toLocaleDateString() : "N/A"}</span>
+          </div>
+
+          {Array.isArray(selectedProject.joinRequests) && selectedProject.joinRequests.length > 0 ? (
+            <div className="my-profile-page__project-members">
+              <strong className="my-profile-page__project-members-title">Join requests</strong>
+              <div className="my-profile-page__project-member-list">
+                {selectedProject.joinRequests.map((request) => (
+                  <div key={request.userId} className="my-profile-page__project-member-item">
+                    <strong>{request.userId}</strong>
+                    <span>Requested {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString() : "Unknown"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {projectDetailError ? (
+            <div className="my-profile-page__error-message">{projectDetailError}</div>
+          ) : null}
+        </article>
+      ) : null}
+
+      {profile.projects.length === 0 && !isCreateFormOpen ? (
+        <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+          <h3>Projects</h3>
+          <p>No projects created yet.</p>
+        </article>
+      ) : null}
+
       {profile.projects.map((project) => (
         <article key={project.id} className="my-profile-page__activity-card">
           <div className="my-profile-page__activity-head">
@@ -467,9 +805,6 @@ function ProjectsTab({ profile, onOpenProject }) {
           </div>
 
           <div className="my-profile-page__activity-meta">
-            <span>Project ID: {project.projectId}</span>
-            <span>Owner: {project.ownerId || "You"}</span>
-
             <span>
               <FolderIcon />
               {project.requiredSkill}
@@ -510,8 +845,18 @@ function ProjectsTab({ profile, onOpenProject }) {
           <div className="my-profile-page__activity-actions">
             <button
               type="button"
+              className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
+              onClick={() => onCancelProject(project.projectId)}
+              disabled={isCancellingProjectId === project.projectId}
+            >
+              {isCancellingProjectId === project.projectId ? "Deleting..." : "Delete Project"}
+            </button>
+
+            <button
+              type="button"
               className="my-profile-page__activity-button"
               onClick={() => onOpenProject(project.projectId)}
+              disabled={isCancellingProjectId === project.projectId}
             >
               Open Project
             </button>
@@ -522,7 +867,39 @@ function ProjectsTab({ profile, onOpenProject }) {
   );
 }
 
-function ProfileContent({ profile, activeTabKey, isOwnProfile, onOpenProject }) {
+function ProfileContent({
+  profile,
+  activeTabKey,
+  isOwnProfile,
+  isSessionCreateFormOpen,
+  createSessionForm,
+  onChangeCreateSessionField,
+  onSubmitCreateSession,
+  onCancelCreateSession,
+  isCreatingSession,
+  createSessionError,
+  sessionActionError,
+  onOpenSession,
+  selectedSession,
+  onCloseSession,
+  onDeleteSession,
+  isDeletingSessionId,
+  isCreateFormOpen,
+  createProjectForm,
+  onChangeCreateProjectField,
+  onSubmitCreateProject,
+  onCancelCreateProject,
+  isCreatingProject,
+  createProjectError,
+  projectActionError,
+  onOpenProject,
+  onCancelProject,
+  isCancellingProjectId,
+  selectedProject,
+  isLoadingProjectDetail,
+  projectDetailError,
+  onCloseProject,
+}) {
   switch (activeTabKey) {
     case "skills":
       return <SkillsTab profile={profile} />;
@@ -531,9 +908,45 @@ function ProfileContent({ profile, activeTabKey, isOwnProfile, onOpenProject }) 
     case "reviews":
       return <ReviewsTab profile={profile} />;
     case "sessions":
-      return isOwnProfile ? <SessionsTab profile={profile} /> : null;
+      return isOwnProfile ? (
+        <SessionsTab
+          profile={profile}
+          isCreateFormOpen={isSessionCreateFormOpen}
+          createSessionForm={createSessionForm}
+          onChangeCreateSessionField={onChangeCreateSessionField}
+          onSubmitCreateSession={onSubmitCreateSession}
+          onCancelCreateSession={onCancelCreateSession}
+          isCreatingSession={isCreatingSession}
+          createSessionError={createSessionError}
+          sessionActionError={sessionActionError}
+          onOpenSession={onOpenSession}
+          selectedSession={selectedSession}
+          onCloseSession={onCloseSession}
+          onDeleteSession={onDeleteSession}
+          isDeletingSessionId={isDeletingSessionId}
+        />
+      ) : null;
     case "projects":
-      return isOwnProfile ? <ProjectsTab profile={profile} onOpenProject={onOpenProject} /> : null;
+      return isOwnProfile ? (
+        <ProjectsTab
+          profile={profile}
+          isCreateFormOpen={isCreateFormOpen}
+          createProjectForm={createProjectForm}
+          onChangeCreateProjectField={onChangeCreateProjectField}
+          onSubmitCreateProject={onSubmitCreateProject}
+          onCancelCreateProject={onCancelCreateProject}
+          isCreatingProject={isCreatingProject}
+          createProjectError={createProjectError}
+          projectActionError={projectActionError}
+          onOpenProject={onOpenProject}
+          onCancelProject={onCancelProject}
+          isCancellingProjectId={isCancellingProjectId}
+          selectedProject={selectedProject}
+          isLoadingProjectDetail={isLoadingProjectDetail}
+          projectDetailError={projectDetailError}
+          onCloseProject={onCloseProject}
+        />
+      ) : null;
     case "about":
     default:
       return <AboutTab profile={profile} />;
@@ -548,6 +961,20 @@ function MyProfile() {
   const [profileRecord, setProfileRecord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [createSessionForm, setCreateSessionForm] = useState(EMPTY_SESSION_FORM);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [createSessionError, setCreateSessionError] = useState("");
+  const [sessionActionError, setSessionActionError] = useState("");
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isDeletingSessionId, setIsDeletingSessionId] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
+  const [projectDetailError, setProjectDetailError] = useState("");
+  const [createProjectForm, setCreateProjectForm] = useState(EMPTY_PROJECT_FORM);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [createProjectError, setCreateProjectError] = useState("");
+  const [projectActionError, setProjectActionError] = useState("");
+  const [isCancellingProjectId, setIsCancellingProjectId] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -637,6 +1064,10 @@ function MyProfile() {
   const currentTabKey = visibleTabs.some((tab) => tab.key === requestedTabKey)
     ? requestedTabKey
     : visibleTabs[0]?.key ?? "about";
+  const isSessionCreateFormOpen =
+    isOwnProfile && currentTabKey === "sessions" && searchParams.get("createSession") === "1";
+  const isProjectCreateFormOpen =
+    isOwnProfile && currentTabKey === "projects" && searchParams.get("create") === "1";
 
   function handleLogout() {
     clearAuthSession();
@@ -648,15 +1079,256 @@ function MyProfile() {
   }
 
   function handleCreateSession() {
-    navigate("/app/sessions");
+    setSelectedSession(null);
+    setCreateSessionError("");
+    setSessionActionError("");
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "sessions");
+    nextSearchParams.set("createSession", "1");
+    setSearchParams(nextSearchParams, { replace: true });
   }
 
   function handleCreateProject() {
-    navigate("/app/projects?create=1");
+    setSelectedProject(null);
+    setProjectDetailError("");
+    setCreateProjectError("");
+    setProjectActionError("");
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "projects");
+    nextSearchParams.set("create", "1");
+    setSearchParams(nextSearchParams, { replace: true });
   }
 
-  function handleOpenProject(projectId) {
-    navigate(`/app/projects/${encodeURIComponent(projectId)}`);
+  function handleChangeCreateProjectField(field, value) {
+    setCreateProjectError("");
+    setProjectActionError("");
+    setCreateProjectForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  }
+
+  function handleCancelCreateProject() {
+    setCreateProjectForm(EMPTY_PROJECT_FORM);
+    setCreateProjectError("");
+    setProjectActionError("");
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "projects");
+    nextSearchParams.delete("create");
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  async function handleSubmitCreateProject(event) {
+    event.preventDefault();
+
+    if (isCreatingProject) {
+      return;
+    }
+
+    setCreateProjectError("");
+    setProjectActionError("");
+    setIsCreatingProject(true);
+
+    try {
+      const createdProject = await projectApi.create({
+        title: createProjectForm.title.trim(),
+        requiredSkill: createProjectForm.requiredSkill.trim(),
+        status: createProjectForm.status,
+        description: createProjectForm.description.trim(),
+      });
+
+      setProfileRecord((currentProfile) => {
+        if (!currentProfile) {
+          return currentProfile;
+        }
+
+        const currentProjects = Array.isArray(currentProfile.projects) ? currentProfile.projects : [];
+
+        return {
+          ...currentProfile,
+          projects: [createdProject, ...currentProjects],
+        };
+      });
+      setCreateProjectForm(EMPTY_PROJECT_FORM);
+
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set("tab", "projects");
+      nextSearchParams.delete("create");
+      setSearchParams(nextSearchParams, { replace: true });
+    } catch (error) {
+      setCreateProjectError(error.message);
+    } finally {
+      setIsCreatingProject(false);
+    }
+  }
+
+  function handleChangeCreateSessionField(field, value) {
+    setCreateSessionError("");
+    setSessionActionError("");
+    setCreateSessionForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  }
+
+  function handleCancelCreateSession() {
+    setCreateSessionForm(EMPTY_SESSION_FORM);
+    setCreateSessionError("");
+    setSessionActionError("");
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", "sessions");
+    nextSearchParams.delete("createSession");
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  async function reloadOwnSessions() {
+    const sessions = await sessionApi.list();
+
+    setProfileRecord((currentProfile) => {
+      if (!currentProfile) {
+        return currentProfile;
+      }
+
+      return {
+        ...currentProfile,
+        sessions: Array.isArray(sessions) ? sessions : [],
+      };
+    });
+  }
+
+  async function handleSubmitCreateSession(event) {
+    event.preventDefault();
+
+    if (isCreatingSession) {
+      return;
+    }
+
+    setCreateSessionError("");
+    setSessionActionError("");
+    setIsCreatingSession(true);
+
+    try {
+      const parsedDate = new Date(createSessionForm.date);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new Error("Please choose a valid date and time.");
+      }
+
+      await sessionApi.request({
+        teacherId: createSessionForm.teacherId.trim(),
+        skill: createSessionForm.skill.trim(),
+        duration: Number(createSessionForm.duration),
+        date: parsedDate.toISOString(),
+        message: createSessionForm.message.trim(),
+      });
+
+      await reloadOwnSessions();
+      setCreateSessionForm(EMPTY_SESSION_FORM);
+
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set("tab", "sessions");
+      nextSearchParams.delete("createSession");
+      setSearchParams(nextSearchParams, { replace: true });
+    } catch (error) {
+      setCreateSessionError(error.message);
+    } finally {
+      setIsCreatingSession(false);
+    }
+  }
+
+  function handleOpenSession(sessionId) {
+    const session = activeProfile.sessions.find((currentSession) => currentSession.id === sessionId) || null;
+    setSelectedSession(session);
+    setSessionActionError("");
+  }
+
+  function handleCloseSession() {
+    setSelectedSession(null);
+    setSessionActionError("");
+  }
+
+  async function handleDeleteSession(sessionId) {
+    if (!sessionId || isDeletingSessionId) {
+      return;
+    }
+
+    setSessionActionError("");
+    setIsDeletingSessionId(sessionId);
+
+    try {
+      await sessionApi.delete(sessionId);
+      await reloadOwnSessions();
+      setSelectedSession((currentSession) => (currentSession?.id === sessionId ? null : currentSession));
+    } catch (error) {
+      setSessionActionError(error.message);
+    } finally {
+      setIsDeletingSessionId("");
+    }
+  }
+
+  function removeProjectFromProfile(projectId) {
+    setProfileRecord((currentProfile) => {
+      if (!currentProfile) {
+        return currentProfile;
+      }
+
+      const currentProjects = Array.isArray(currentProfile.projects) ? currentProfile.projects : [];
+
+      return {
+        ...currentProfile,
+        projects: currentProjects.filter((project) => project.projectId !== projectId),
+      };
+    });
+
+    setSelectedProject((currentProject) =>
+      currentProject?.projectId === projectId ? null : currentProject,
+    );
+  }
+
+  async function handleOpenProject(projectId) {
+    if (!projectId || isLoadingProjectDetail) {
+      return;
+    }
+
+    setProjectDetailError("");
+    setIsLoadingProjectDetail(true);
+
+    try {
+      const project = await projectApi.get(projectId);
+      setSelectedProject(project);
+    } catch (error) {
+      setProjectDetailError(error.message);
+    } finally {
+      setIsLoadingProjectDetail(false);
+    }
+  }
+
+  async function handleCancelProject(projectId) {
+    if (!projectId || isCancellingProjectId) {
+      return;
+    }
+
+    setProjectActionError("");
+    setProjectDetailError("");
+    setIsCancellingProjectId(projectId);
+
+    try {
+      await projectApi.delete(projectId);
+      removeProjectFromProfile(projectId);
+    } catch (error) {
+      setProjectActionError(error.message);
+    } finally {
+      setIsCancellingProjectId("");
+    }
+  }
+
+  function handleCloseProject() {
+    setSelectedProject(null);
+    setProjectDetailError("");
   }
 
   return (
@@ -792,7 +1464,34 @@ function MyProfile() {
           profile={activeProfile}
           activeTabKey={currentTabKey}
           isOwnProfile={isOwnProfile}
+          isSessionCreateFormOpen={isSessionCreateFormOpen}
+          createSessionForm={createSessionForm}
+          onChangeCreateSessionField={handleChangeCreateSessionField}
+          onSubmitCreateSession={handleSubmitCreateSession}
+          onCancelCreateSession={handleCancelCreateSession}
+          isCreatingSession={isCreatingSession}
+          createSessionError={createSessionError}
+          sessionActionError={sessionActionError}
+          onOpenSession={handleOpenSession}
+          selectedSession={selectedSession}
+          onCloseSession={handleCloseSession}
+          onDeleteSession={handleDeleteSession}
+          isDeletingSessionId={isDeletingSessionId}
+          isCreateFormOpen={isProjectCreateFormOpen}
+          createProjectForm={createProjectForm}
+          onChangeCreateProjectField={handleChangeCreateProjectField}
+          onSubmitCreateProject={handleSubmitCreateProject}
+          onCancelCreateProject={handleCancelCreateProject}
+          isCreatingProject={isCreatingProject}
+          createProjectError={createProjectError}
+          projectActionError={projectActionError}
           onOpenProject={handleOpenProject}
+          onCancelProject={handleCancelProject}
+          isCancellingProjectId={isCancellingProjectId}
+          selectedProject={selectedProject}
+          isLoadingProjectDetail={isLoadingProjectDetail}
+          projectDetailError={projectDetailError}
+          onCloseProject={handleCloseProject}
         />
       </section>
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import './App.css'
 import Header from './component/Landing/Header/Header.jsx'
 import Hero from './component/Landing/Hero/Hero.jsx'
@@ -12,6 +12,8 @@ import Footer from './component/Landing/Footer/Footer.jsx'
 import Footertwo from './component/Landing/Footertwo/Footertwo.jsx'
 import Login from './component/Landing/Login/Login.jsx'
 import Sign from './component/Landing/Sign/Sign.jsx'
+import ForgotPassword from './component/Landing/PasswordRecovery/ForgotPassword.jsx'
+import ResetPassword from './component/Landing/PasswordRecovery/ResetPassword.jsx'
 import DashboardLayout from './component/Dashboard/Layout/DashboardLayout.jsx'
 import SharedHeaderLayout from './component/Dashboard/Layout/SharedHeaderLayout.jsx'
 import DashboardHome from './component/Dashboard/DashboardHome/DashboardHome.jsx'
@@ -171,6 +173,121 @@ function SignupPage() {
   )
 }
 
+function ForgotPasswordPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [debugResetUrl, setDebugResetUrl] = useState("")
+
+  const handleSubmitCapture = async (event) => {
+    event.preventDefault()
+    setErrorMessage("")
+    setSuccessMessage("")
+    setDebugResetUrl("")
+
+    const email = event.target.elements.namedItem("email")?.value?.trim()
+
+    if (!email) {
+      setErrorMessage("Veuillez saisir votre adresse email.")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const response = await authApi.forgotPassword({ email })
+      setSuccessMessage(
+        response?.message || "If that email exists, a reset link has been sent."
+      )
+      setDebugResetUrl(response?.debugResetUrl || "")
+      event.target.reset()
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div onSubmitCapture={handleSubmitCapture}>
+      <ForgotPassword
+        isSubmitting={isSubmitting}
+        errorMessage={errorMessage}
+        successMessage={successMessage}
+        debugResetUrl={debugResetUrl}
+      />
+    </div>
+  )
+}
+
+function ResetPasswordPage() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const token = searchParams.get("token")?.trim() || ""
+
+  const handleSubmitCapture = async (event) => {
+    event.preventDefault()
+    setErrorMessage("")
+
+    if (!token) {
+      setErrorMessage("Invalid or missing reset token.")
+      return
+    }
+
+    const password = event.target.elements.namedItem("password")?.value || ""
+    const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+
+    if (!password || !confirmPassword) {
+      setErrorMessage("Veuillez remplir les deux champs du mot de passe.")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Les mots de passe ne correspondent pas.")
+      return
+    }
+
+    if (password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long.")
+      return
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setErrorMessage("Password must contain at least one uppercase letter.")
+      return
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setErrorMessage("Password must contain at least one number.")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const session = await authApi.resetPassword(token, { password })
+      setAuthSession(session)
+      navigate('/app', { replace: true })
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div onSubmitCapture={handleSubmitCapture}>
+      <ResetPassword
+        isSubmitting={isSubmitting}
+        errorMessage={errorMessage}
+        isTokenMissing={!token}
+      />
+    </div>
+  )
+}
+
 function ProtectedAppRoute() {
   if (!hasAuthSession()) {
     return <Navigate to="/login" replace />
@@ -219,6 +336,8 @@ const App = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/app" element={<ProtectedAppRoute />}>
         <Route index element={<DashboardHome />} />
         <Route element={<SharedHeaderLayout />}>

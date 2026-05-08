@@ -65,6 +65,18 @@ export const authApi = {
       body: payload,
     });
   },
+  forgotPassword(payload) {
+    return apiRequest("/auth/forgot-password", {
+      method: "POST",
+      body: payload,
+    });
+  },
+  resetPassword(token, payload) {
+    return apiRequest(`/auth/reset-password/${encodeURIComponent(token)}`, {
+      method: "POST",
+      body: payload,
+    });
+  },
 };
 
 export const userApi = {
@@ -127,6 +139,11 @@ export const sessionApi = {
       method: "PATCH",
     });
   },
+  delete(sessionId) {
+    return apiRequest(`/sessions/${sessionId}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 export const projectApi = {
@@ -172,6 +189,16 @@ export const projectApi = {
   },
   leave(projectId) {
     return apiRequest(`/projects/${projectId}/leave`, {
+      method: "POST",
+    });
+  },
+  approveJoinRequest(projectId, userId) {
+    return apiRequest(`/projects/${projectId}/requests/${userId}/approve`, {
+      method: "POST",
+    });
+  },
+  rejectJoinRequest(projectId, userId) {
+    return apiRequest(`/projects/${projectId}/requests/${userId}/reject`, {
       method: "POST",
     });
   },

@@ -197,6 +197,7 @@ export function mapOwnedSession(session, viewerUserId) {
   const isTeacher = session.teacherId === viewerUserId;
   const otherParticipant = isTeacher ? session.learner : session.teacher;
   const isLearner = session.learnerId === viewerUserId;
+  const description = session.message?.trim() || "No message added for this session.";
 
   return {
     id: session.sessionId,
@@ -210,7 +211,9 @@ export function mapOwnedSession(session, viewerUserId) {
     credits: formatCreditLabel(credits),
     status: statusConfig.tabKey,
     badge: statusConfig.badge,
+    description,
     canCancel: isLearner && normalizedStatus === "PENDING",
+    canDelete: normalizedStatus !== "COMPLETED",
   };
 }
 

@@ -30,9 +30,9 @@ const Login = ({ isSubmitting = false, errorMessage = "" }) => {
               placeholder="Enter your password"
             />
           </div>
-          <a href="/forgot-password" className="Login-forgot-password">
+          <Link to="/forgot-password" className="Login-forgot-password">
             Forgot Password?
-          </a>
+          </Link>
 
           {errorMessage ? <p>{errorMessage}</p> : null}
 

@@ -63,32 +63,38 @@
 }
 
 .projects-page__controls {
-  padding: 30px 40px 0;
+  padding-top: 28px;
+}
+
+.projects-page__content-inner {
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
 .projects-page__toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .projects-page__search {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 62px;
-  padding: 0 22px;
-  border-radius: 22px;
-  background: #fbf4e9;
-  color: #7d4020;
+  gap: 12px;
+  flex: 1 1 420px;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid rgba(227, 214, 196, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 20px rgba(186, 154, 126, 0.06);
 }
 
 .projects-page__search-icon {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: #9a4a18;
   flex-shrink: 0;
 }
 
@@ -103,7 +109,7 @@
 }
 
 .projects-page__search input::placeholder {
-  color: #928372;
+  color: #9f7158;
 }
 
 .projects-page__status-filter {
@@ -470,14 +476,15 @@
     padding: 18px 24px;
   }
 
-  .projects-page__controls,
+  .projects-page__content-inner,
   .projects-page__content {
     padding-left: 24px;
     padding-right: 24px;
   }
 
   .projects-page__toolbar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .projects-page__status-filter select {
@@ -492,15 +499,13 @@
 
   .projects-page__header {
     padding: 18px;
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .projects-page__header h1 {
     font-size: 1.75rem;
   }
 
-  .projects-page__controls,
+  .projects-page__content-inner,
   .projects-page__content {
     padding-left: 18px;
     padding-right: 18px;
@@ -518,9 +523,8 @@
   }
 
   .projects-page__search {
-    min-height: 56px;
-    padding: 0 18px;
-    border-radius: 18px;
+    min-height: 52px;
+    padding: 0 14px;
   }
 
   .projects-page__form-grid {
