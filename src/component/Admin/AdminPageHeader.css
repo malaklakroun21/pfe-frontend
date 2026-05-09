@@ -1,0 +1,52 @@
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(20, 21, 26, 0.08);
+}
+
+.admin-page-header__title {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: #101114;
+}
+
+.admin-page-header__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(16, 17, 20, 0.92);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.admin-page-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-page-header__signout {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  color: #101114;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.admin-page-header__signout:hover {
+  background: rgba(243, 235, 224, 0.95);
+}
+

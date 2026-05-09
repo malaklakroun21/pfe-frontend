@@ -14,6 +14,45 @@
   gap: 20px;
 }
 
+.dashboard-header__signout {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2d251f;
+  font-weight: 600;
+  font-family: "Geologica", sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-header__signout:hover {
+  background: rgba(243, 235, 224, 0.95);
+  transform: translateY(-1px);
+}
+
+.dashboard-header__signout:focus-visible {
+  outline: 3px solid rgba(223, 108, 36, 0.24);
+  outline-offset: 3px;
+}
+
+.dashboard-header__admin-link {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(223, 108, 36, 0.35);
+  border-radius: 14px;
+  background: rgba(223, 108, 36, 0.12);
+  color: #71351c;
+  font-weight: 700;
+  font-family: "Geologica", sans-serif;
+  cursor: pointer;
+}
+
+.dashboard-header__admin-link:hover {
+  background: rgba(223, 108, 36, 0.18);
+}
+
 .dashboard-header__search {
   flex: 1 1 auto;
   max-width: 720px;

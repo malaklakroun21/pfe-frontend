@@ -1,6 +1,6 @@
 import "./Header.css";
 import { useNavigate } from "react-router-dom";
-import { useAuthSession } from "../../../../authSession.js";
+import { clearAuthSession, useAuthSession } from "../../../../authSession.js";
 import { useNotificationsState } from "../../Notifications/notificationsStore.js";
 
 function buildInitials(user) {
@@ -23,6 +23,12 @@ function Header() {
   const navigate = useNavigate();
   const { user } = useAuthSession();
   const { unreadCount } = useNotificationsState();
+  const isAdmin = String(user?.role || "").toLowerCase() === "admin";
+
+  const handleSignOut = () => {
+    clearAuthSession();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <header className="dashboard-header">
@@ -71,6 +77,23 @@ function Header() {
             <span className="dashboard-header__notification-dot" aria-hidden="true" />
           ) : null}
         </button>
+
+        <button
+          type="button"
+          className="dashboard-header__signout"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </button>
+        {isAdmin ? (
+          <button
+            type="button"
+            className="dashboard-header__admin-link"
+            onClick={() => navigate("/admin")}
+          >
+            Admin
+          </button>
+        ) : null}
 
         <button
           type="button"

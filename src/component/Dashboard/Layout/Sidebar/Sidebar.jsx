@@ -90,10 +90,18 @@ function SidebarIcon({ name }) {
   }
 }
 
-function Sidebar({ activeItem = "validation", onItemSelect }) {
+function Sidebar({
+  activeItem = "validation",
+  onItemSelect,
+  sectionKeys = dashboardSectionKeys,
+  sections = dashboardSections,
+  brandTo = "/",
+  brandLabel = "Go to Fenneky home page",
+}) {
+
   return (
     <aside className="dashboard-sidebar">
-      <Link to="/" className="dashboard-sidebar__brand" aria-label="Go to Fenneky home page">
+      <Link to={brandTo} className="dashboard-sidebar__brand" aria-label={brandLabel}>
         <div className="dashboard-sidebar__brand-mark">
           <img src={Fenec} alt="Fenneky logo" className="dashboard-sidebar__logo" />
         </div>
@@ -102,8 +110,8 @@ function Sidebar({ activeItem = "validation", onItemSelect }) {
 
       <nav className="dashboard-sidebar__nav" aria-label="Dashboard navigation">
         <ul className="dashboard-sidebar__list">
-          {dashboardSectionKeys.map((itemKey) => {
-            const item = dashboardSections[itemKey];
+          {sectionKeys.map((itemKey) => {
+            const item = sections[itemKey];
             const isActive = item.key === activeItem;
 
             return (

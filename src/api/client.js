@@ -1,9 +1,14 @@
 import { clearAuthSession, getAccessToken } from "../authSession.js";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const ADMIN_API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "/api/admin";
 
 function buildRequestUrl(path) {
   return `${API_BASE_URL}${path}`;
+}
+
+function buildAdminRequestUrl(path) {
+  return `${ADMIN_API_BASE_URL}${path}`;
 }
 
 async function parseResponse(response) {
@@ -44,6 +49,31 @@ export async function apiRequest(path, options = {}) {
   }
 
   const response = await fetch(buildRequestUrl(path), {
+    ...fetchOptions,
+    headers: requestHeaders,
+    body: requestBody,
+  });
+
+  return parseResponse(response);
+}
+
+export async function adminApiRequest(path, options = {}) {
+  const { body, headers, ...fetchOptions } = options;
+  const requestHeaders = new Headers(headers || {});
+  const accessToken = getAccessToken();
+
+  if (accessToken) {
+    requestHeaders.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  let requestBody = body;
+
+  if (body !== undefined && !(body instanceof FormData)) {
+    requestHeaders.set("Content-Type", "application/json");
+    requestBody = JSON.stringify(body);
+  }
+
+  const response = await fetch(buildAdminRequestUrl(path), {
     ...fetchOptions,
     headers: requestHeaders,
     body: requestBody,
@@ -252,6 +282,101 @@ export const notificationApi = {
   delete(notificationId) {
     return apiRequest(`/notifications/${notificationId}`, {
       method: "DELETE",
+    });
+  },
+};
+
+export const adminApi = {
+  getDashboard() {
+    return adminApiRequest("/dashboard");
+  },
+  listUsers(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      searchParams.set(key, String(value));
+    });
+
+    const query = searchParams.toString();
+    return adminApiRequest(`/users${query ? `?${query}` : ""}`);
+  },
+  getUser(userId) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}`);
+  },
+  updateUser(userId, payload) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      body: payload,
+    });
+  },
+  deleteUser(userId) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+  },
+  updateUserRole(userId, role) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}/role`, {
+      method: "PATCH",
+      body: { role },
+    });
+  },
+  updateUserPermissions(userId, permissions) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}/permissions`, {
+      method: "PATCH",
+      body: { permissions },
+    });
+  },
+  updateUserStatus(userId, payload) {
+    return adminApiRequest(`/users/${encodeURIComponent(userId)}/status`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+  listReports(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      searchParams.set(key, String(value));
+    });
+
+    const query = searchParams.toString();
+    return adminApiRequest(`/reports${query ? `?${query}` : ""}`);
+  },
+  updateReport(reportId, payload) {
+    return adminApiRequest(`/reports/${encodeURIComponent(reportId)}`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+  listAuditLogs(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      searchParams.set(key, String(value));
+    });
+
+    const query = searchParams.toString();
+    return adminApiRequest(`/audit-logs${query ? `?${query}` : ""}`);
+  },
+  listSettings() {
+    return adminApiRequest("/settings");
+  },
+  updateSetting(key, payload) {
+    return adminApiRequest(`/settings/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: payload,
     });
   },
 };
