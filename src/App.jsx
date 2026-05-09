@@ -29,11 +29,18 @@ import Settings from './component/Dashboard/Settings/Settings.jsx'
 import { authApi, userApi } from './api/client.js'
 import {
   clearAuthSession,
+  getAuthUser,
   hasAuthSession,
   setAuthSession,
   updateAuthUser,
   useAuthSession,
 } from './authSession.js'
+import AdminLayout from './component/Admin/AdminLayout.jsx'
+import AdminDashboard from './component/Admin/AdminDashboard/AdminDashboard.jsx'
+import AdminUsers from './component/Admin/Users/AdminUsers.jsx'
+import AdminReports from './component/Admin/Reports/AdminReports.jsx'
+import AdminAudit from './component/Admin/Audit/AdminAudit.jsx'
+import AdminSettings from './component/Admin/Settings/AdminSettings.jsx'
 
 function LandingPage() {
   return (
@@ -61,14 +68,22 @@ function splitFullName(fullName = "") {
   };
 }
 
+function isAdminUser(user) {
+  return String(user?.role || "").toLowerCase() === "admin";
+}
+
+function getDefaultAuthenticatedRoute(user) {
+  return isAdminUser(user) ? "/admin" : "/app";
+}
+
 function LoginPage() {
   const navigate = useNavigate()
-  const { accessToken } = useAuthSession()
+  const { accessToken, user } = useAuthSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
   if (accessToken) {
-    return <Navigate to="/app" replace />
+    return <Navigate to={getDefaultAuthenticatedRoute(user)} replace />
   }
 
   const handleSubmitCapture = async (event) => {
@@ -92,7 +107,7 @@ function LoginPage() {
       })
 
       setAuthSession(session)
-      navigate('/app', { replace: true })
+      navigate(getDefaultAuthenticatedRoute(session?.user), { replace: true })
     } catch (error) {
       setErrorMessage(error.message)
     } finally {
@@ -109,13 +124,13 @@ function LoginPage() {
 
 function SignupPage() {
   const navigate = useNavigate()
-  const { accessToken } = useAuthSession()
+  const { accessToken, user } = useAuthSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [selectedRole, setSelectedRole] = useState("LEARNER")
 
   if (accessToken) {
-    return <Navigate to="/app" replace />
+    return <Navigate to={getDefaultAuthenticatedRoute(user)} replace />
   }
 
   const handleSubmitCapture = async (event) => {
@@ -153,7 +168,7 @@ function SignupPage() {
       })
 
       setAuthSession(session)
-      navigate('/app', { replace: true })
+      navigate(getDefaultAuthenticatedRoute(session?.user), { replace: true })
     } catch (error) {
       setErrorMessage(error.message)
     } finally {
@@ -269,7 +284,7 @@ function ResetPasswordPage() {
     try {
       const session = await authApi.resetPassword(token, { password })
       setAuthSession(session)
-      navigate('/app', { replace: true })
+      navigate(getDefaultAuthenticatedRoute(session?.user), { replace: true })
     } catch (error) {
       setErrorMessage(error.message)
     } finally {
@@ -294,6 +309,21 @@ function ProtectedAppRoute() {
   }
 
   return <DashboardLayout />
+}
+
+function ProtectedAdminRoute() {
+  if (!hasAuthSession()) {
+    return <Navigate to="/login" replace />
+  }
+
+  const user = getAuthUser()
+  const role = String(user?.role || "").toLowerCase()
+
+  if (role !== "admin") {
+    return <Navigate to="/app" replace />
+  }
+
+  return <AdminLayout />
 }
 
 const App = () => {
@@ -355,6 +385,14 @@ const App = () => {
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="*" element={<Navigate to="/app" replace />} />
+      </Route>
+      <Route path="/admin" element={<ProtectedAdminRoute />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="audit" element={<AdminAudit />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
