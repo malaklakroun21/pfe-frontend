@@ -11,16 +11,6 @@ function ValidationBadgeIcon() {
   );
 }
 
-function UploadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="M12 16.5V4.75" strokeLinecap="round" />
-      <path d="m7.75 9 4.25-4.25L16.25 9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 14.75v2.1A2.15 2.15 0 0 0 7.15 19h9.7A2.15 2.15 0 0 0 19 16.85v-2.1" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function getRecommendedMentorId(mentors, selectedSkillId) {
   if (!Array.isArray(mentors) || mentors.length === 0) {
     return "";
@@ -40,7 +30,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const [selectedMentorId, setSelectedMentorId] = useState("");
   const [customSkillName, setCustomSkillName] = useState("");
   const [portfolioLink, setPortfolioLink] = useState("");
-  const [supportingFiles, setSupportingFiles] = useState([]);
   const [validatorNote, setValidatorNote] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,6 +49,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           skillId: "",
           label: normalizedCustomSkillName,
           description: "Manual validation request",
+          evidenceCount: 0,
         })
       : selectedSkillFromOption;
   const recommendedMentorId = getRecommendedMentorId(
@@ -74,11 +64,14 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const currentStep = steps[activeStepIndex] ?? steps[0] ?? null;
   const selectedMentor =
     mentorOptions.find((mentor) => mentor.id === effectiveSelectedMentorId) ?? null;
+  const selectedSkillEvidenceCount = selectedSkill?.evidenceCount ?? 0;
+  const hasExistingEvidence = selectedSkillEvidenceCount > 0;
+  const hasPortfolioLink = portfolioLink.trim().length > 0;
 
   const canContinueByStep = {
     "select-skill": Boolean(selectedSkill),
     "choose-mentor": Boolean(effectiveSelectedMentorId),
-    evidence: portfolioLink.trim().length > 0 || supportingFiles.length > 0,
+    evidence: hasExistingEvidence || hasPortfolioLink,
     submit: Boolean(selectedSkill && selectedMentor),
   };
 
@@ -106,7 +99,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           selectedSkill,
           selectedMentor,
           portfolioLink,
-          supportingFiles,
           validatorNote,
         });
 
@@ -131,12 +123,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
     setActiveStepIndex((current) => Math.max(current - 1, 0));
   };
 
-  const handleSupportingFilesChange = (event) => {
-    const uploadedFiles = Array.from(event.target.files ?? []);
-
-    setSupportingFiles(uploadedFiles);
-  };
-
   const renderStepContent = () => {
     if (!currentStep) {
       return null;
@@ -148,7 +134,10 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           <div className="validation-page__wizard-body">
             <div className="validation-page__wizard-copy">
               <h4>Write the skill you want to validate</h4>
-              <p>Type your skill yourself. You do not need to choose it from the list.</p>
+              <p>
+                Type your skill yourself. If it already exists in your backend profile, the
+                request will reuse that skill automatically.
+              </p>
             </div>
 
             <label className="validation-page__wizard-field">
@@ -215,39 +204,33 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
         return (
           <div className="validation-page__wizard-body">
             <div className="validation-page__upload-section">
-              <strong className="validation-page__upload-title">Upload supporting evidence</strong>
+              <strong className="validation-page__upload-title">Add proof of work</strong>
 
-              <label className="validation-page__upload-dropzone">
-                <input
-                  type="file"
-                  multiple
-                  className="validation-page__upload-input"
-                  onChange={handleSupportingFilesChange}
-                />
-
-                <span className="validation-page__upload-icon">
-                  <UploadIcon />
-                </span>
-
-                <span className="validation-page__upload-copy">
-                  Click to upload certificates, portfolio work, or other credentials
-                </span>
-
-                <span className="validation-page__upload-note">PDF, images, or documents</span>
-              </label>
-
-              {supportingFiles.length > 0 ? (
-                <div className="validation-page__upload-files">
-                  {supportingFiles.map((file) => (
-                    <span key={`${file.name}-${file.lastModified}`}>{file.name}</span>
-                  ))}
-                </div>
-              ) : null}
+              <div
+                className={`validation-page__evidence-status ${
+                  hasExistingEvidence
+                    ? "validation-page__evidence-status--ready"
+                    : "validation-page__evidence-status--missing"
+                }`}
+              >
+                <strong>
+                  {hasExistingEvidence
+                    ? `${selectedSkillEvidenceCount} saved evidence item${
+                        selectedSkillEvidenceCount === 1 ? "" : "s"
+                      } already linked`
+                    : "No saved evidence linked to this skill yet"}
+                </strong>
+                <p>
+                  {hasExistingEvidence
+                    ? "This skill already has backend evidence. You can continue now or add one more portfolio link below."
+                    : "Add at least one portfolio link below so the validator can review concrete work before you submit."}
+                </p>
+              </div>
             </div>
 
             <div className="validation-page__portfolio-section">
               <label className="validation-page__wizard-field">
-                <span>Portfolio Links (optional)</span>
+                <span>{hasExistingEvidence ? "Portfolio link (optional)" : "Portfolio link"}</span>
                 <input
                   type="url"
                   placeholder="https://example.com/portfolio"
@@ -255,7 +238,22 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
                   onChange={(event) => setPortfolioLink(event.target.value)}
                 />
               </label>
+
+              <p className="validation-page__evidence-note">
+                Only saved links are sent with the request for now.
+              </p>
             </div>
+
+            {requestFlow?.evidenceTips?.length ? (
+              <div className="validation-page__wizard-tips">
+                <strong>Tips</strong>
+                <ul>
+                  {requestFlow.evidenceTips.map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         );
       case "submit":
@@ -286,9 +284,10 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
                     <strong>Portfolio:</strong> {portfolioLink}
                   </p>
                 ) : null}
-                {supportingFiles.length > 0 ? (
+                {hasExistingEvidence ? (
                   <p>
-                    <strong>Files:</strong> {supportingFiles.length} uploaded
+                    <strong>Saved evidence:</strong> {selectedSkillEvidenceCount} linked item
+                    {selectedSkillEvidenceCount === 1 ? "" : "s"}
                   </p>
                 ) : null}
                 {validatorNote.trim() && !isSubmitted ? (

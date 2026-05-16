@@ -197,7 +197,7 @@ function AdminReports() {
                               const nextStatus = e.target.value;
                               e.target.value = "";
                               if (!nextStatus) return;
-                              handleUpdateStatus(report.reportId, nextStatus);
+                              handleUpdateStatus(reportId, nextStatus);
                             }}
                           >
                             <option value="">Update status…</option>
@@ -212,7 +212,7 @@ function AdminReports() {
                             <summary className="admin-muted" style={{ cursor: "pointer" }}>
                               Add resolution
                             </summary>
-                            <form onSubmit={(e) => handleResolutionSubmit(report.reportId, e)}>
+                            <form onSubmit={(e) => handleResolutionSubmit(reportId, e)}>
                               <div className="admin-toolbar__group" style={{ marginTop: 8 }}>
                                 <select name="status" className="admin-select" defaultValue="UNDER_REVIEW">
                                   {STATUS_OPTIONS.filter(Boolean).map((value) => (

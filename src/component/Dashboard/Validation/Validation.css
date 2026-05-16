@@ -268,65 +268,37 @@
   font-weight: 600;
 }
 
-.validation-page__upload-dropzone {
-  min-height: 162px;
-  padding: 22px 24px;
+.validation-page__evidence-status {
   display: grid;
-  place-items: center;
-  text-align: center;
-  gap: 10px;
-  border: 2px dashed #f1c7b6;
-  border-radius: 22px;
-  background: #fffdfb;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.validation-page__upload-dropzone:hover {
-  border-color: #df7b4f;
-  background: #fffaf6;
-}
-
-.validation-page__upload-input {
-  display: none;
-}
-
-.validation-page__upload-icon {
-  width: 48px;
-  height: 48px;
-  display: inline-grid;
-  place-items: center;
-  color: #cc541f;
-}
-
-.validation-page__upload-icon svg {
-  width: 48px;
-  height: 48px;
-}
-
-.validation-page__upload-copy {
-  color: #0f172a;
-  font-size: 0.98rem;
-  line-height: 1.45;
-}
-
-.validation-page__upload-note {
-  color: #8f3c16;
-  font-size: 0.92rem;
-}
-
-.validation-page__upload-files {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(236, 224, 211, 0.95);
 }
 
-.validation-page__upload-files span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #fdf1ea;
-  color: #a64518;
-  font-size: 0.88rem;
+.validation-page__evidence-status strong {
+  color: #0f172a;
+}
+
+.validation-page__evidence-status p,
+.validation-page__evidence-note {
+  margin: 0;
+  color: #7b3b1e;
+  line-height: 1.5;
+}
+
+.validation-page__evidence-status--ready {
+  background: #eef8f0;
+  border-color: #c7e5cf;
+}
+
+.validation-page__evidence-status--missing {
+  background: #fff8f3;
+  border-color: #f1c7b6;
+}
+
+.validation-page__evidence-note {
+  font-size: 0.92rem;
 }
 
 .validation-page__wizard-field {
@@ -876,11 +848,6 @@
   .validation-page__wizard-secondary,
   .validation-page__wizard-primary {
     width: 100%;
-  }
-
-  .validation-page__upload-dropzone {
-    min-height: 148px;
-    padding: 20px 18px;
   }
 
   .validation-page__wizard-field--submit textarea {

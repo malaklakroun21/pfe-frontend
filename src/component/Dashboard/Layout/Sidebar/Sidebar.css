@@ -66,11 +66,11 @@
 }
 
 .dashboard-sidebar__item {
-  width: 85%;
+  width: 72%;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 10px 14px;
   border: none;
   border-radius: 22px;
   background: transparent;

@@ -4,7 +4,13 @@ import AdminPageHeader from "../AdminPageHeader.jsx";
 import { adminApi } from "../../../api/client.js";
 import "../adminUi.css";
 
-const ROLE_OPTIONS = ["", "LEARNER", "MENTOR", "ADMIN", "admin", "user"];
+const ROLE_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "LEARNER", label: "LEARNER" },
+  { value: "MENTOR", label: "MENTOR" },
+  { value: "ADMIN", label: "ADMIN" },
+  { value: "user", label: "USER" },
+];
 const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED", "BANNED"];
 
 function statusPillClass(status) {
@@ -17,6 +23,7 @@ function statusPillClass(status) {
 
 function AdminUsers() {
   const [query, setQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("");
   const [accountStatus, setAccountStatus] = useState("");
   const [page, setPage] = useState(1);
@@ -68,7 +75,7 @@ function AdminUsers() {
   const handleApplySearch = (event) => {
     event.preventDefault();
     setPage(1);
-    setQuery(event.target.elements.namedItem("q")?.value || "");
+    setQuery(searchInput);
   };
 
   const handleQuickRoleChange = async (userId, nextRole) => {
@@ -147,7 +154,8 @@ function AdminUsers() {
                 name="q"
                 className="admin-input"
                 placeholder="name, email, userId..."
-                defaultValue={query}
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
               />
             </div>
 
@@ -162,9 +170,9 @@ function AdminUsers() {
                   setRole(e.target.value);
                 }}
               >
-                {ROLE_OPTIONS.map((value) => (
-                  <option key={value || "all"} value={value}>
-                    {value ? value : "All"}
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value || "all"} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -200,6 +208,7 @@ function AdminUsers() {
               className="admin-button admin-button--ghost"
               onClick={() => {
                 setQuery("");
+                setSearchInput("");
                 setRole("");
                 setAccountStatus("");
                 setPage(1);
@@ -258,13 +267,13 @@ function AdminUsers() {
                               const nextRole = e.target.value;
                               e.target.value = "";
                               if (!nextRole) return;
-                              handleQuickRoleChange(user.userId, nextRole);
+                              handleQuickRoleChange(userId, nextRole);
                             }}
                           >
                             <option value="">Change role…</option>
-                            {ROLE_OPTIONS.filter(Boolean).map((value) => (
-                              <option key={value} value={value}>
-                                {value}
+                            {ROLE_OPTIONS.filter((option) => option.value).map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
                               </option>
                             ))}
                           </select>
@@ -277,7 +286,7 @@ function AdminUsers() {
                               const nextStatus = e.target.value;
                               e.target.value = "";
                               if (!nextStatus) return;
-                              handleQuickStatusChange(user.userId, nextStatus);
+                              handleQuickStatusChange(userId, nextStatus);
                             }}
                           >
                             <option value="">Change status…</option>
@@ -292,7 +301,7 @@ function AdminUsers() {
                             type="button"
                             className="admin-button admin-button--ghost"
                             disabled={isBusy}
-                            onClick={() => handleDeleteUser(user.userId)}
+                            onClick={() => handleDeleteUser(userId)}
                           >
                             Delete
                           </button>
