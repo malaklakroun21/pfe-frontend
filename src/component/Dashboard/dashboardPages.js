@@ -198,7 +198,7 @@ export const dashboardSections = {
     icon: "validation",
     title: "Validation",
     subtitle:
-      "Finish the steps required to become an approved mentor inside the platform.",
+      "Request mentor validation for your skills, or review incoming requests if you are a mentor.",
     stats: [
       { label: "Profile completed", value: "78%", accent: "warm" },
       { label: "Documents uploaded", value: "02", accent: "soft" },

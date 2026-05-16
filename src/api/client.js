@@ -151,6 +151,31 @@ export const dashboardApi = {
   },
 };
 
+export const validationApi = {
+  listMentorRequests(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    if (params.status) {
+      searchParams.set("status", params.status);
+    }
+
+    const query = searchParams.toString();
+    return apiRequest(`/validation/mentor/requests${query ? `?${query}` : ""}`);
+  },
+  acceptRequest(requestId, payload) {
+    return apiRequest(`/validation/mentor/requests/${encodeURIComponent(requestId)}/accept`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+  rejectRequest(requestId, payload) {
+    return apiRequest(`/validation/mentor/requests/${encodeURIComponent(requestId)}/reject`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+};
+
 export const sessionApi = {
   list() {
     return apiRequest("/sessions");
