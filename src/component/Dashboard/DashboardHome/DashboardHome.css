@@ -299,3 +299,31 @@
     text-align: left;
   }
 }
+
+.dashboard-home__activity-card {
+  align-items: center;
+}
+
+.dashboard-home__activity-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dashboard-home__activity-pill--validated {
+  background: #e8f8ef;
+  color: #16794c;
+}
+
+.dashboard-home__activity-pill--rejected {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.dashboard-home__activity-pill--pending,
+.dashboard-home__activity-pill--in_review {
+  background: #fff4df;
+  color: #9a5b16;
+}

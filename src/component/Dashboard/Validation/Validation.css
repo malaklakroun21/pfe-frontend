@@ -863,3 +863,196 @@
     padding: 16px;
   }
 }
+
+.validation-page__mentor-title {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 1.45rem;
+}
+
+.validation-page__mentor-description {
+  margin: 0 0 20px;
+  color: #64748b;
+}
+
+.validation-page__mentor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.validation-page__mentor-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.validation-page__mentor-summary span {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f8efe2;
+  color: #8f3c16;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.validation-page__mentor-filter {
+  display: grid;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.validation-page__mentor-filter select {
+  min-width: 160px;
+  padding: 10px 12px;
+  border: 1px solid #e7d7bf;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.validation-page__mentor-error {
+  color: #b42318;
+}
+
+.validation-page__mentor-list {
+  display: grid;
+  gap: 16px;
+}
+
+.validation-page__mentor-request {
+  padding: 18px;
+  border: 1px solid #efe2cf;
+  border-radius: 18px;
+  background: #fffaf2;
+}
+
+.validation-page__mentor-request-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.validation-page__mentor-request-head strong {
+  display: block;
+  color: #0f172a;
+}
+
+.validation-page__mentor-request-head span {
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.validation-page__mentor-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.validation-page__mentor-status--pending,
+.validation-page__mentor-status--in_review {
+  background: #fff4df;
+  color: #9a5b16;
+}
+
+.validation-page__mentor-status--validated {
+  background: #e8f8ef;
+  color: #16794c;
+}
+
+.validation-page__mentor-status--rejected {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.validation-page__mentor-meta,
+.validation-page__mentor-note {
+  margin: 10px 0 0;
+  color: #64748b;
+}
+
+.validation-page__mentor-result--accepted {
+  color: #16794c;
+}
+
+.validation-page__mentor-result--rejected {
+  color: #b42318;
+}
+
+.validation-page__mentor-actions {
+  margin-top: 16px;
+}
+
+.validation-page__mentor-form {
+  display: grid;
+  gap: 14px;
+}
+
+.validation-page__mentor-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.validation-page__learner-statuses h3 {
+  margin: 0 0 16px;
+  color: #0f172a;
+}
+
+.validation-page__learner-status-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.validation-page__learner-status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fffaf2;
+  border: 1px solid #efe2cf;
+}
+
+.validation-page__learner-status-item strong {
+  display: block;
+  color: #0f172a;
+}
+
+.validation-page__learner-status-item span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.validation-page__learner-status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.validation-page__learner-status-pill--validated {
+  background: #e8f8ef;
+  color: #16794c;
+}
+
+.validation-page__learner-status-pill--rejected {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.validation-page__learner-status-pill--pending {
+  background: #fff4df;
+  color: #9a5b16;
+}

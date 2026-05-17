@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { dashboardApi } from "../../../api/client.js";
+import { useAuthSession } from "../../../authSession.js";
+import MentorValidationInbox from "./MentorValidationInbox.jsx";
 import "./Validation.css";
+
+function isMentorUser(user) {
+  const role = String(user?.role || "").toUpperCase();
+  return role === "MENTOR" || role === "ADMIN";
+}
 
 function ValidationBadgeIcon() {
   return (
@@ -370,12 +377,57 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   );
 }
 
+function LearnerSkillStatuses({ skills = [] }) {
+  if (!skills.length) {
+    return null;
+  }
+
+  return (
+    <article className="validation-page__card validation-page__learner-statuses">
+      <h3>Your skill validation status</h3>
+      <ul className="validation-page__learner-status-list">
+        {skills.map((skill) => (
+          <li key={skill.id} className={`validation-page__learner-status-item is-${skill.status}`}>
+            <div>
+              <strong>{skill.name}</strong>
+              <span>{skill.level}</span>
+            </div>
+            <div className="validation-page__learner-status-meta">
+              {skill.status === "validated" ? (
+                <span className="validation-page__learner-status-pill validation-page__learner-status-pill--validated">
+                  Validated · can teach · score {skill.validationScore ?? 0}/100
+                </span>
+              ) : null}
+              {skill.status === "rejected" ? (
+                <span className="validation-page__learner-status-pill validation-page__learner-status-pill--rejected">
+                  Rejected · cannot teach yet
+                </span>
+              ) : null}
+              {skill.status === "in_review" ? (
+                <span className="validation-page__learner-status-pill validation-page__learner-status-pill--pending">
+                  Waiting for mentor review
+                </span>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
 function Validation() {
+  const { user } = useAuthSession();
+  const isMentor = isMentorUser(user);
   const [pageData, setPageData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isMentor);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
+    if (isMentor) {
+      return undefined;
+    }
+
     let isActive = true;
 
     async function loadValidationPage() {
@@ -408,7 +460,29 @@ function Validation() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [isMentor]);
+
+  if (isMentor) {
+    return (
+      <section className="validation-page">
+        <article className="validation-page__card validation-page__card--intro">
+          <div className="validation-page__intro-icon">
+            <ValidationBadgeIcon />
+          </div>
+
+          <div className="validation-page__intro-copy">
+            <h2>Review learner validation requests</h2>
+            <p>
+              Accept requests with a score so learners can teach the skill, or reject them to
+              block teaching until they improve and resubmit.
+            </p>
+          </div>
+        </article>
+
+        <MentorValidationInbox />
+      </section>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -455,6 +529,8 @@ function Validation() {
           </ul>
         </div>
       </article>
+
+      <LearnerSkillStatuses skills={pageData.skills} />
 
       <RequestValidationWizard
         requestFlow={pageData.requestFlow}

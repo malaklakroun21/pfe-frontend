@@ -81,6 +81,43 @@ function StarIcon() {
   );
 }
 
+function ValidationPendingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7.5v5l3 2.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ValidationApprovedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.75 17.5 6v6.1c0 3.12-2.08 5.98-5.5 8.15-3.42-2.17-5.5-5.03-5.5-8.15V6L12 3.75Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m9.5 11.75 1.6 1.65 3-3.4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ValidationRejectedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m9 9 6 6M15 9l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function StatIcon({ icon }) {
   switch (icon) {
     case "credits":
@@ -91,9 +128,25 @@ function StatIcon({ icon }) {
       return <TrendIcon />;
     case "validation":
       return <ChatIcon />;
+    case "validation-pending":
+      return <ValidationPendingIcon />;
+    case "validation-approved":
+      return <ValidationApprovedIcon />;
+    case "validation-rejected":
+      return <ValidationRejectedIcon />;
     default:
       return null;
   }
+}
+
+function formatSubmittedAt(value) {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Recently";
+  }
+
+  return parsedDate.toLocaleString();
 }
 
 function DashboardHome() {
@@ -140,19 +193,28 @@ function DashboardHome() {
   const stats = pageData?.stats || [];
   const upcomingSessions = pageData?.upcomingSessions || [];
   const recommendedSkills = pageData?.recommendedSkills || [];
+  const pendingValidationRequests = pageData?.pendingValidationRequests || [];
+  const recentValidationActivity = pageData?.recentValidationActivity || [];
+  const validationOverview = pageData?.validationOverview || null;
+  const isMentorDashboard = pageData?.role === "mentor";
   const welcomeName = pageData?.welcome?.firstName || "Member";
   const isFirstVisit = Boolean(pageData?.welcome?.isFirstVisit);
   const creditsAvailable = pageData?.creditsAvailable ?? 0;
   const welcomeHeading = isFirstVisit
     ? `Welcome, ${welcomeName}!`
     : `Welcome back, ${welcomeName}!`;
+  const heroDescription = isMentorDashboard
+    ? validationOverview?.pending
+      ? `You have ${validationOverview.pending} validation request${validationOverview.pending === 1 ? "" : "s"} waiting for review.`
+      : "No pending validation requests right now. Check recent activity below."
+    : `You have ${creditsAvailable} credits available`;
 
   return (
     <ViewFrame header={<Header />}>
       <section className="dashboard-home">
         <div className="dashboard-home__hero">
           <h1>{welcomeHeading}</h1>
-          <p>You have {creditsAvailable} credits available</p>
+          <p>{heroDescription}</p>
         </div>
 
         {errorMessage ? <p>{errorMessage}</p> : null}
@@ -178,6 +240,34 @@ function DashboardHome() {
             </div>
 
             <div className="dashboard-home__content-grid">
+              {isMentorDashboard ? (
+                <section className="dashboard-home__panel">
+                  <div className="dashboard-home__panel-header">
+                    <h2>Pending validation requests</h2>
+                    <button type="button" onClick={() => navigate("/app/validation")}>
+                      Review all
+                    </button>
+                  </div>
+
+                  <div className="dashboard-home__session-list">
+                    {pendingValidationRequests.length > 0 ? (
+                      pendingValidationRequests.map((request) => (
+                        <article key={request.id} className="dashboard-home__session-card">
+                          <div className="dashboard-home__avatar">{request.initials}</div>
+                          <div className="dashboard-home__session-copy">
+                            <h3>{request.skillName}</h3>
+                            <p>from {request.learnerName}</p>
+                            <span>{formatSubmittedAt(request.submittedAt)}</span>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <p>No pending validation requests.</p>
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="dashboard-home__panel">
                 <div className="dashboard-home__panel-header">
                   <h2>Upcoming Sessions</h2>
@@ -211,14 +301,47 @@ function DashboardHome() {
 
               <section className="dashboard-home__panel">
                 <div className="dashboard-home__panel-header">
-                  <h2>Recommended Skills to Learn</h2>
-                  <button type="button" onClick={() => navigate("/app/explore")}>
-                    Explore more
+                  <h2>
+                    {isMentorDashboard ? "Recent validation activity" : "Recommended Skills to Learn"}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate(isMentorDashboard ? "/app/validation" : "/app/explore")}
+                  >
+                    {isMentorDashboard ? "Open inbox" : "Explore more"}
                   </button>
                 </div>
 
                 <div className="dashboard-home__recommendation-list">
-                  {recommendedSkills.length > 0 ? (
+                  {isMentorDashboard ? (
+                    recentValidationActivity.length > 0 ? (
+                      recentValidationActivity.map((activity) => (
+                        <article
+                          key={activity.id}
+                          className="dashboard-home__recommendation-card dashboard-home__activity-card"
+                        >
+                          <div className="dashboard-home__recommendation-copy">
+                            <h3>{activity.skillName}</h3>
+                            <p>{activity.learnerName}</p>
+                          </div>
+
+                          <div className="dashboard-home__recommendation-meta">
+                            <span
+                              className={`dashboard-home__activity-pill dashboard-home__activity-pill--${String(activity.status || "").toLowerCase()}`}
+                            >
+                              {activity.status === "VALIDATED"
+                                ? `Validated · ${activity.validationScore}/100`
+                                : activity.status === "REJECTED"
+                                  ? "Rejected"
+                                  : activity.status}
+                            </span>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <p>No validation activity yet.</p>
+                    )
+                  ) : recommendedSkills.length > 0 ? (
                     recommendedSkills.map((skill) => (
                       <article key={skill.id} className="dashboard-home__recommendation-card">
                         <div className="dashboard-home__avatar">{skill.initials}</div>
