@@ -35,6 +35,7 @@ import {
   updateAuthUser,
   useAuthSession,
 } from './authSession.js'
+import RegisterAdmin from './component/Landing/RegisterAdmin/RegisterAdmin.jsx'
 import AdminLayout from './component/Admin/AdminLayout.jsx'
 import AdminDashboard from './component/Admin/AdminDashboard/AdminDashboard.jsx'
 import AdminUsers from './component/Admin/Users/AdminUsers.jsx'
@@ -303,6 +304,58 @@ function ResetPasswordPage() {
   )
 }
 
+function AdminRegisterPage() {
+  const navigate = useNavigate()
+  const { accessToken, user } = useAuthSession()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+
+  if (accessToken) {
+    return <Navigate to={getDefaultAuthenticatedRoute(user)} replace />
+  }
+
+  const handleSubmitCapture = async (event) => {
+    event.preventDefault()
+    setErrorMessage("")
+
+    const fullName = event.target.elements.namedItem("full-name")?.value?.trim() || ""
+    const email = event.target.elements.namedItem("email")?.value?.trim()
+    const password = event.target.elements.namedItem("password")?.value || ""
+    const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+    const bootstrapSecret = event.target.elements.namedItem("bootstrap-secret")?.value || ""
+
+    if (!fullName || !email || !password || !confirmPassword || !bootstrapSecret) {
+      setErrorMessage("Veuillez remplir tous les champs.")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Les mots de passe ne correspondent pas.")
+      return
+    }
+
+    const { firstName, lastName } = splitFullName(fullName)
+
+    setIsSubmitting(true)
+
+    try {
+      const session = await authApi.registerAdmin({ firstName, lastName, email, password }, bootstrapSecret)
+      setAuthSession(session)
+      navigate("/admin", { replace: true })
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div onSubmitCapture={handleSubmitCapture}>
+      <RegisterAdmin isSubmitting={isSubmitting} errorMessage={errorMessage} />
+    </div>
+  )
+}
+
 function ProtectedAppRoute() {
   if (!hasAuthSession()) {
     return <Navigate to="/login" replace />
@@ -368,6 +421,7 @@ const App = () => {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/register-admin" element={<AdminRegisterPage />} />
       <Route path="/app" element={<ProtectedAppRoute />}>
         <Route index element={<DashboardHome />} />
         <Route element={<SharedHeaderLayout />}>

@@ -20,12 +20,17 @@
 .admin-page-header__badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(16, 17, 20, 0.92);
-  color: #fff;
-  font-weight: 600;
-  font-size: 13px;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 2px solid #df5a1c;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #df5a1c;
+  font-family: "Geologica", sans-serif;
+  font-weight: 500;
+  font-size: 0.86rem;
+  box-sizing: border-box;
 }
 
 .admin-page-header__actions {
@@ -35,18 +40,50 @@
 }
 
 .admin-page-header__signout {
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(16, 17, 20, 0.14);
-  background: rgba(255, 255, 255, 0.9);
-  color: #101114;
-  font-weight: 600;
-  font-size: 13px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 2px solid #f2c8b4;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #a13e12;
+  font-family: "Geologica", sans-serif;
+  font-weight: 500;
+  font-size: 0.86rem;
   cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .admin-page-header__signout:hover {
-  background: rgba(243, 235, 224, 0.95);
+  background: #fdf2eb;
+  border-color: #edb89d;
+  transform: translateY(-1px);
+}
+
+.admin-page-header__badge:hover {
+  background: #fff7f1;
+}
+
+.admin-page-header__signout:focus-visible,
+.admin-page-header__badge:focus-visible {
+  outline: 3px solid rgba(223, 90, 28, 0.18);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .admin-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-page-header__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-page-header__signout,
+  .admin-page-header__badge {
+    flex: 1 1 0;
+  }
 }
 

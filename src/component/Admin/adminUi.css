@@ -34,38 +34,58 @@
   height: 40px;
   padding: 0 12px;
   border-radius: 12px;
-  border: 1px solid rgba(16, 17, 20, 0.12);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #f1d6c7;
+  background: #fffdfb;
   font-family: "Geologica", sans-serif;
+  color: #0f172a;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .admin-input:focus,
 .admin-select:focus {
-  border-color: rgba(223, 108, 36, 0.55);
-  box-shadow: 0 0 0 4px rgba(223, 108, 36, 0.12);
+  border-color: #d98d64;
+  box-shadow: 0 0 0 4px rgba(217, 141, 100, 0.12);
 }
 
 .admin-button {
   height: 40px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: 12px;
-  border: 1px solid rgba(16, 17, 20, 0.12);
-  background: rgba(16, 17, 20, 0.92);
+  border: none;
+  background: #bd482d;
   color: #fff;
+  font-size: 13px;
   font-weight: 700;
   font-family: "Geologica", sans-serif;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.admin-button:hover:not(:disabled) {
+  background: #d16a41;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(189, 72, 45, 0.22);
 }
 
 .admin-button--ghost {
-  background: rgba(255, 255, 255, 0.9);
-  color: #101114;
+  background: #ffffff;
+  color: #bd482d;
+  border: 1px solid #f1d6c7;
+}
+
+.admin-button--ghost:hover:not(:disabled) {
+  background: #fdf6e8;
+  border-color: #d98d64;
+  box-shadow: 0 4px 12px rgba(182, 154, 129, 0.14);
+  transform: translateY(-1px);
 }
 
 .admin-button:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .admin-card {
@@ -94,8 +114,8 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(16, 17, 20, 0.6);
-  background: rgba(251, 244, 233, 0.55);
+  color: #9b3d18;
+  background: #fdf6e8;
 }
 
 .admin-pill {
@@ -133,5 +153,101 @@
 .admin-muted {
   color: rgba(16, 17, 20, 0.68);
   font-size: 13px;
+}
+
+/* ── Section title ── */
+.admin-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(16, 17, 20, 0.45);
+  margin: 24px 0 10px;
+}
+
+/* ── Stats grid ── */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.admin-stat-card {
+  border-radius: 14px;
+  border: 1px solid rgba(16, 17, 20, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(14px);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-stat-card strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: #101114;
+}
+
+.admin-stat-card--dark strong   { color: #101114; }
+.admin-stat-card--active strong { color: #1f6f3a; }
+.admin-stat-card--suspended strong { color: #a45811; }
+.admin-stat-card--banned strong { color: #b42318; }
+
+/* ── Danger button ── */
+.admin-button--danger {
+  background: rgba(180, 35, 24, 0.07);
+  color: #b42318;
+  border: 1px solid rgba(180, 35, 24, 0.18);
+}
+
+.admin-button--danger:hover:not(:disabled) {
+  background: rgba(180, 35, 24, 0.13);
+  border-color: rgba(180, 35, 24, 0.35);
+  box-shadow: 0 4px 12px rgba(180, 35, 24, 0.12);
+  transform: translateY(-1px);
+}
+
+/* ── Permissions panel ── */
+.admin-permissions-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(16, 17, 20, 0.1);
+  background: rgba(251, 244, 233, 0.6);
+  backdrop-filter: blur(14px);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.admin-permissions-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.admin-permissions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-perm-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-perm-label input {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #df6c24;
 }
 

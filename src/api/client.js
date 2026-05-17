@@ -95,6 +95,13 @@ export const authApi = {
       body: payload,
     });
   },
+  registerAdmin(payload, bootstrapSecret) {
+    return apiRequest("/auth/register-admin", {
+      method: "POST",
+      body: payload,
+      headers: { "x-admin-bootstrap-secret": bootstrapSecret || "" },
+    });
+  },
   forgotPassword(payload) {
     return apiRequest("/auth/forgot-password", {
       method: "POST",
