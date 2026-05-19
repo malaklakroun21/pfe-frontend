@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../../api/client.js";
+import LevelCard from "../../XP/LevelCard.jsx";
 import Header from "../Layout/Header/Header.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./DashboardHome.css";
@@ -34,6 +35,19 @@ function CalendarIcon() {
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function XpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.75 15.75 8.25l5.25.75-3.8 3.7.9 5.2L12 15.5l-5.4 2.9.9-5.2-3.8-3.7 5.25-.75L12 3.75Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -120,6 +134,8 @@ function ValidationRejectedIcon() {
 
 function StatIcon({ icon }) {
   switch (icon) {
+    case "xp":
+      return <XpIcon />;
     case "credits":
       return <CreditsIcon />;
     case "sessions":
@@ -196,18 +212,27 @@ function DashboardHome() {
   const pendingValidationRequests = pageData?.pendingValidationRequests || [];
   const recentValidationActivity = pageData?.recentValidationActivity || [];
   const validationOverview = pageData?.validationOverview || null;
+  const xpProfile = pageData?.xp || null;
   const isMentorDashboard = pageData?.role === "mentor";
   const welcomeName = pageData?.welcome?.firstName || "Member";
   const isFirstVisit = Boolean(pageData?.welcome?.isFirstVisit);
   const creditsAvailable = pageData?.creditsAvailable ?? 0;
+  const xpLevelLabel = xpProfile
+    ? `Level ${xpProfile.level} · ${xpProfile.levelTitle}`
+    : null;
   const welcomeHeading = isFirstVisit
     ? `Welcome, ${welcomeName}!`
     : `Welcome back, ${welcomeName}!`;
   const heroDescription = isMentorDashboard
-    ? validationOverview?.pending
-      ? `You have ${validationOverview.pending} validation request${validationOverview.pending === 1 ? "" : "s"} waiting for review.`
-      : "No pending validation requests right now. Check recent activity below."
-    : `You have ${creditsAvailable} credits available`;
+    ? [
+        xpLevelLabel,
+        validationOverview?.pending
+          ? `${validationOverview.pending} validation request${validationOverview.pending === 1 ? "" : "s"} waiting`
+          : "No pending validation requests",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : [xpLevelLabel, `${creditsAvailable} credits available`].filter(Boolean).join(" · ");
 
   return (
     <ViewFrame header={<Header />}>
@@ -223,6 +248,12 @@ function DashboardHome() {
           <p>Loading dashboard...</p>
         ) : (
           <>
+            {xpProfile ? (
+              <div className="dashboard-home__xp">
+                <LevelCard xpProfile={xpProfile} showHistory />
+              </div>
+            ) : null}
+
             <div className="dashboard-home__stats">
               {stats.map((stat) => (
                 <article key={stat.id} className="dashboard-home__stat-card">

@@ -55,7 +55,7 @@
 }
 
 .settings-page__field input,
-.settings-page__field select,
+.settings-page__field .themed-select__trigger,
 .settings-page__field textarea {
   width: 100%;
   padding: 12px 16px;
@@ -76,7 +76,8 @@
 }
 
 .settings-page__field input:focus,
-.settings-page__field select:focus,
+.settings-page__field .themed-select__trigger:focus-visible,
+.settings-page__field .themed-select.is-open .themed-select__trigger,
 .settings-page__field textarea:focus {
   border-color: #de5c1a;
   box-shadow: 0 0 0 4px rgba(222, 92, 26, 0.08);
@@ -485,7 +486,7 @@
   }
 
   .settings-page__field input,
-  .settings-page__field select,
+  .settings-page__field .themed-select__trigger,
   .settings-page__field textarea {
     padding: 11px 14px;
     border-radius: 18px;

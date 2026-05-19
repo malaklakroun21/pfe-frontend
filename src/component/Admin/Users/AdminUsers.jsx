@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import ViewFrame from "../../Dashboard/Layout/ViewFrame/ViewFrame.jsx";
 import AdminPageHeader from "../AdminPageHeader.jsx";
 import { adminApi } from "../../../api/client.js";
-import { useAuthSession } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "../adminUi.css";
 
 const ROLE_OPTIONS = [
@@ -12,7 +12,9 @@ const ROLE_OPTIONS = [
   { value: "ADMIN", label: "ADMIN" },
   { value: "user", label: "USER" },
 ];
+
 const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED", "BANNED"];
+
 const ALL_PERMISSIONS = [
   "manage_users",
   "manage_admins",
@@ -26,20 +28,28 @@ const ALL_PERMISSIONS = [
 ];
 
 function statusPillClass(status) {
-  const s = String(status || "").toUpperCase();
-  if (s === "ACTIVE") return "admin-pill admin-pill--active";
-  if (s === "SUSPENDED") return "admin-pill admin-pill--suspended";
-  if (s === "BANNED") return "admin-pill admin-pill--banned";
+  const normalizedStatus = String(status || "").toUpperCase();
+
+  if (normalizedStatus === "ACTIVE") {
+    return "admin-pill admin-pill--active";
+  }
+
+  if (normalizedStatus === "SUSPENDED") {
+    return "admin-pill admin-pill--suspended";
+  }
+
+  if (normalizedStatus === "BANNED") {
+    return "admin-pill admin-pill--banned";
+  }
+
   return "admin-pill";
 }
 
 function isAdminRole(role) {
-  const r = String(role || "").toUpperCase();
-  return r === "ADMIN";
+  return String(role || "").toUpperCase() === "ADMIN";
 }
 
 function PermissionsPanel({ userId, onClose, onSaved }) {
-  const [detail, setDetail] = useState(null);
   const [selected, setSelected] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,35 +57,51 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
 
   useEffect(() => {
     let isActive = true;
-    setIsLoading(true);
-    setError("");
-    adminApi.getUser(userId).then((user) => {
-      if (!isActive) return;
-      setDetail(user);
-      setSelected(user?.adminProfile?.permissions ?? ALL_PERMISSIONS);
-    }).catch((err) => {
-      if (!isActive) return;
-      setError(err.message);
-    }).finally(() => {
-      if (isActive) setIsLoading(false);
-    });
-    return () => { isActive = false; };
+
+    adminApi
+      .getUser(userId)
+      .then((user) => {
+        if (!isActive) {
+          return;
+        }
+
+        setSelected(user?.adminProfile?.permissions ?? ALL_PERMISSIONS);
+      })
+      .catch((nextError) => {
+        if (!isActive) {
+          return;
+        }
+
+        setError(nextError.message);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, [userId]);
 
-  const toggle = (perm) => {
-    setSelected((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+  const toggle = (permission) => {
+    setSelected((currentPermissions) =>
+      currentPermissions.includes(permission)
+        ? currentPermissions.filter((currentPermission) => currentPermission !== permission)
+        : [...currentPermissions, permission],
     );
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     setError("");
+
     try {
       await adminApi.updateUserPermissions(userId, selected);
       onSaved();
-    } catch (err) {
-      setError(err.message);
+    } catch (nextError) {
+      setError(nextError.message);
     } finally {
       setIsSaving(false);
     }
@@ -84,29 +110,32 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
   return (
     <div className="admin-permissions-panel">
       <div className="admin-permissions-panel__header">
-        <strong>Permissions admin — {userId}</strong>
+        <strong>Permissions admin - {userId}</strong>
         <button type="button" className="admin-button admin-button--ghost" onClick={onClose}>
           Fermer
         </button>
       </div>
+
       {isLoading ? (
         <p className="admin-muted">Chargement...</p>
       ) : (
         <>
           {error ? <p className="admin-muted">{error}</p> : null}
+
           <div className="admin-permissions-grid">
-            {ALL_PERMISSIONS.map((perm) => (
-              <label key={perm} className="admin-perm-label">
+            {ALL_PERMISSIONS.map((permission) => (
+              <label key={permission} className="admin-perm-label">
                 <input
                   type="checkbox"
-                  checked={selected.includes(perm)}
-                  onChange={() => toggle(perm)}
+                  checked={selected.includes(permission)}
+                  onChange={() => toggle(permission)}
                   disabled={isSaving}
                 />
-                {perm}
+                {permission}
               </label>
             ))}
           </div>
+
           <div className="admin-toolbar__group" style={{ marginTop: 12 }}>
             <button
               type="button"
@@ -122,7 +151,7 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
               disabled={isSaving}
               onClick={() => setSelected(ALL_PERMISSIONS)}
             >
-              Tout sélectionner
+              Tout selectionner
             </button>
             <button
               type="button"
@@ -130,7 +159,7 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
               disabled={isSaving}
               onClick={() => setSelected([])}
             >
-              Tout désélectionner
+              Tout deselectionner
             </button>
           </div>
         </>
@@ -140,9 +169,7 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
 }
 
 function EditUserPanel({ user, onClose, onSaved }) {
-  const [name, setName] = useState(
-    [user.firstName, user.lastName].filter(Boolean).join(" ")
-  );
+  const [name, setName] = useState([user.firstName, user.lastName].filter(Boolean).join(" "));
   const [email, setEmail] = useState(user.email || "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -151,11 +178,12 @@ function EditUserPanel({ user, onClose, onSaved }) {
     event.preventDefault();
     setIsSaving(true);
     setError("");
+
     try {
       await adminApi.updateUser(user.userId, { name, email });
       onSaved();
-    } catch (err) {
-      setError(err.message);
+    } catch (nextError) {
+      setError(nextError.message);
     } finally {
       setIsSaving(false);
     }
@@ -164,35 +192,42 @@ function EditUserPanel({ user, onClose, onSaved }) {
   return (
     <div className="admin-permissions-panel">
       <div className="admin-permissions-panel__header">
-        <strong>Modifier — {user.userId}</strong>
+        <strong>Modifier - {user.userId}</strong>
         <button type="button" className="admin-button admin-button--ghost" onClick={onClose}>
           Fermer
         </button>
       </div>
+
       {error ? <p className="admin-muted">{error}</p> : null}
+
       <form onSubmit={handleSave}>
-        <div className="admin-toolbar__group" style={{ flexDirection: "column", alignItems: "flex-start", gap: 10 }}>
+        <div
+          className="admin-toolbar__group"
+          style={{ flexDirection: "column", alignItems: "flex-start", gap: 10 }}
+        >
           <div className="admin-field">
             <label>Nom complet</label>
             <input
               className="admin-input"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Prénom Nom"
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Prenom Nom"
               disabled={isSaving}
             />
           </div>
+
           <div className="admin-field">
             <label>Email</label>
             <input
               className="admin-input"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               placeholder="email@example.com"
               disabled={isSaving}
             />
           </div>
+
           <button type="submit" className="admin-button" disabled={isSaving}>
             {isSaving ? "Enregistrement..." : "Enregistrer"}
           </button>
@@ -203,8 +238,6 @@ function EditUserPanel({ user, onClose, onSaved }) {
 }
 
 function AdminUsers() {
-  const { user: currentUser } = useAuthSession();
-  const currentUserId = currentUser?.userId || "";
   const [query, setQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("");
@@ -222,12 +255,13 @@ function AdminUsers() {
   const items = data?.items ?? [];
 
   const fetchUsers = async (overridePage) => {
-    const p = overridePage ?? page;
+    const nextPage = overridePage ?? page;
     setIsLoading(true);
     setErrorMessage("");
+
     try {
       const response = await adminApi.listUsers({
-        page: p,
+        page: nextPage,
         limit: 20,
         q: query.trim() || undefined,
         role: role || undefined,
@@ -247,6 +281,7 @@ function AdminUsers() {
     async function loadUsers() {
       setIsLoading(true);
       setErrorMessage("");
+
       try {
         const response = await adminApi.listUsers({
           page,
@@ -255,18 +290,30 @@ function AdminUsers() {
           role: role || undefined,
           accountStatus: accountStatus || undefined,
         });
-        if (!isActive) return;
+
+        if (!isActive) {
+          return;
+        }
+
         setData(response);
       } catch (error) {
-        if (!isActive) return;
+        if (!isActive) {
+          return;
+        }
+
         setErrorMessage(error.message);
       } finally {
-        if (isActive) setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadUsers();
-    return () => { isActive = false; };
+
+    return () => {
+      isActive = false;
+    };
   }, [page, query, role, accountStatus]);
 
   const title = useMemo(() => {
@@ -283,6 +330,7 @@ function AdminUsers() {
   const handleQuickRoleChange = async (userId, nextRole) => {
     setBusyUserId(userId);
     setErrorMessage("");
+
     try {
       await adminApi.updateUserRole(userId, nextRole);
       await fetchUsers();
@@ -296,6 +344,7 @@ function AdminUsers() {
   const handleQuickStatusChange = async (userId, nextStatus) => {
     setBusyUserId(userId);
     setErrorMessage("");
+
     try {
       await adminApi.updateUserStatus(userId, { accountStatus: nextStatus, reason: "" });
       await fetchUsers();
@@ -307,10 +356,15 @@ function AdminUsers() {
   };
 
   const handleDeleteUser = async (userId) => {
-    const confirmed = window.confirm("Supprimer cet utilisateur ? Cette action est irréversible.");
-    if (!confirmed) return;
+    const confirmed = window.confirm("Supprimer cet utilisateur ? Cette action est irreversible.");
+
+    if (!confirmed) {
+      return;
+    }
+
     setBusyUserId(userId);
     setErrorMessage("");
+
     try {
       await adminApi.deleteUser(userId);
       setPage(1);
@@ -335,40 +389,39 @@ function AdminUsers() {
                 className="admin-input"
                 placeholder="nom, email, userId..."
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                onChange={(event) => setSearchInput(event.target.value)}
               />
             </div>
 
             <div className="admin-field">
-              <label htmlFor="admin-users-role">Rôle</label>
-              <select
+              <label htmlFor="admin-users-role">Role</label>
+              <ThemedSelect
                 id="admin-users-role"
                 className="admin-select"
                 value={role}
-                onChange={(e) => { setPage(1); setRole(e.target.value); }}
-              >
-                {ROLE_OPTIONS.map((option) => (
-                  <option key={option.value || "all"} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={ROLE_OPTIONS}
+                onChange={(nextValue) => {
+                  setPage(1);
+                  setRole(nextValue);
+                }}
+              />
             </div>
 
             <div className="admin-field">
               <label htmlFor="admin-users-status">Statut</label>
-              <select
+              <ThemedSelect
                 id="admin-users-status"
                 className="admin-select"
                 value={accountStatus}
-                onChange={(e) => { setPage(1); setAccountStatus(e.target.value); }}
-              >
-                {STATUS_OPTIONS.map((value) => (
-                  <option key={value || "all"} value={value}>
-                    {value ? value : "All"}
-                  </option>
-                ))}
-              </select>
+                options={STATUS_OPTIONS.map((value) => ({
+                  value,
+                  label: value || "All",
+                }))}
+                onChange={(nextValue) => {
+                  setPage(1);
+                  setAccountStatus(nextValue);
+                }}
+              />
             </div>
 
             <button type="submit" className="admin-button" disabled={isLoading}>
@@ -389,7 +442,7 @@ function AdminUsers() {
               }}
               disabled={isLoading}
             >
-              Réinitialiser
+              Reinitialiser
             </button>
           </div>
         </form>
@@ -397,21 +450,29 @@ function AdminUsers() {
         {errorMessage ? <p className="admin-muted">{errorMessage}</p> : null}
         {isLoading ? <p className="admin-muted">Chargement des utilisateurs...</p> : null}
 
-        {permsPanelUserId && (
+        {permsPanelUserId ? (
           <PermissionsPanel
+            key={`permissions-${permsPanelUserId}`}
             userId={permsPanelUserId}
             onClose={() => setPermsPanelUserId(null)}
-            onSaved={() => { setPermsPanelUserId(null); fetchUsers(); }}
+            onSaved={() => {
+              setPermsPanelUserId(null);
+              fetchUsers();
+            }}
           />
-        )}
+        ) : null}
 
-        {editPanelUser && (
+        {editPanelUser ? (
           <EditUserPanel
+            key={`edit-${editPanelUser.userId}`}
             user={editPanelUser}
             onClose={() => setEditPanelUser(null)}
-            onSaved={() => { setEditPanelUser(null); fetchUsers(); }}
+            onSaved={() => {
+              setEditPanelUser(null);
+              fetchUsers();
+            }}
           />
-        )}
+        ) : null}
 
         <div className="admin-card">
           <table className="admin-table">
@@ -419,7 +480,7 @@ function AdminUsers() {
               <tr>
                 <th>Utilisateur</th>
                 <th>Email</th>
-                <th>Rôle</th>
+                <th>Role</th>
                 <th>Statut</th>
                 <th style={{ width: 440 }}>Actions rapides</th>
               </tr>
@@ -428,68 +489,68 @@ function AdminUsers() {
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="admin-muted">
-                    Aucun utilisateur trouvé.
+                    Aucun utilisateur trouve.
                   </td>
                 </tr>
               ) : (
                 items.map((user) => {
                   const userId = user.userId || user._id || "";
                   const isBusy = busyUserId === userId;
-                  const isSelf = userId === currentUserId;
 
                   return (
                     <tr key={userId}>
                       <td>
                         <strong>
-                          {[user.firstName, user.lastName].filter(Boolean).join(" ") || "—"}
+                          {[user.firstName, user.lastName].filter(Boolean).join(" ") || "-"}
                         </strong>
                         <div className="admin-muted">{user.userId}</div>
                       </td>
-                      <td>{user.email || "—"}</td>
-                      <td>{user.role || "—"}</td>
+                      <td>{user.email || "-"}</td>
+                      <td>{user.role || "-"}</td>
                       <td>
                         <span className={statusPillClass(user.accountStatus)}>
-                          {user.accountStatus || "—"}
+                          {user.accountStatus || "-"}
                         </span>
                       </td>
                       <td>
                         {isAdminRole(user.role) ? (
-                          <span className="admin-muted">—</span>
+                          <span className="admin-muted">-</span>
                         ) : (
                           <div className="admin-toolbar__group">
-                            <select
+                            <ThemedSelect
                               className="admin-select"
+                              placeholder="Changer role..."
                               defaultValue=""
+                              resetAfterSelect
+                              options={ROLE_OPTIONS.filter((option) => option.value)}
                               disabled={isBusy}
-                              onChange={(e) => {
-                                const nextRole = e.target.value;
-                                e.target.value = "";
-                                if (!nextRole) return;
-                                handleQuickRoleChange(userId, nextRole);
-                              }}
-                            >
-                              <option value="">Changer rôle…</option>
-                              {ROLE_OPTIONS.filter((o) => o.value).map((o) => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                              ))}
-                            </select>
+                              onChange={(nextValue) => {
+                                if (!nextValue) {
+                                  return;
+                                }
 
-                            <select
-                              className="admin-select"
-                              defaultValue=""
-                              disabled={isBusy}
-                              onChange={(e) => {
-                                const nextStatus = e.target.value;
-                                e.target.value = "";
-                                if (!nextStatus) return;
-                                handleQuickStatusChange(userId, nextStatus);
+                                handleQuickRoleChange(userId, nextValue);
                               }}
-                            >
-                              <option value="">Changer statut…</option>
-                              {STATUS_OPTIONS.filter(Boolean).map((value) => (
-                                <option key={value} value={value}>{value}</option>
-                              ))}
-                            </select>
+                            />
+
+                            <ThemedSelect
+                              className="admin-select"
+                              placeholder="Changer statut..."
+                              defaultValue=""
+                              resetAfterSelect
+                              options={STATUS_OPTIONS.filter(Boolean).map((value) => ({
+                                value,
+                                label: value,
+                              }))}
+                              disabled={isBusy}
+                              onChange={(nextValue) => {
+                                if (!nextValue) {
+                                  return;
+                                }
+
+                                handleQuickStatusChange(userId, nextValue);
+                              }}
+                            />
 
                             <button
                               type="button"
@@ -499,17 +560,6 @@ function AdminUsers() {
                             >
                               Modifier
                             </button>
-
-                            {isAdminRole(user.role) && (
-                              <button
-                                type="button"
-                                className="admin-button admin-button--ghost"
-                                disabled={isBusy}
-                                onClick={() => setPermsPanelUserId(userId)}
-                              >
-                                Permissions
-                              </button>
-                            )}
 
                             <button
                               type="button"
@@ -537,15 +587,15 @@ function AdminUsers() {
               type="button"
               className="admin-button admin-button--ghost"
               disabled={isLoading || page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
             >
-              Précédent
+              Precedent
             </button>
             <button
               type="button"
               className="admin-button admin-button--ghost"
               disabled={isLoading || page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
             >
               Suivant
             </button>

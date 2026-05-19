@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { projectApi } from "../../../api/client.js";
 import { refreshNotifications } from "../Notifications/notificationsStore.js";
 import { useAuthSession } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./Projects.css";
 
@@ -555,21 +556,16 @@ function Projects() {
 
                   <label className="projects-page__field">
                     <span>Status</span>
-                    <select
+                    <ThemedSelect
                       value={createForm.status}
-                      onChange={(event) =>
+                      options={EDITABLE_PROJECT_STATUS_OPTIONS}
+                      onChange={(nextValue) =>
                         setCreateForm((current) => ({
                           ...current,
-                          status: event.target.value,
+                          status: nextValue,
                         }))
                       }
-                    >
-                      {EDITABLE_PROJECT_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
 
                   <label className="projects-page__field projects-page__field--full">
@@ -811,21 +807,16 @@ function Projects() {
 
                         <label className="projects-page__field">
                           <span>Status</span>
-                          <select
+                          <ThemedSelect
                             value={editForm.status}
-                            onChange={(event) =>
+                            options={EDITABLE_PROJECT_STATUS_OPTIONS}
+                            onChange={(nextValue) =>
                               setEditForm((current) => ({
                                 ...current,
-                                status: event.target.value,
+                                status: nextValue,
                               }))
                             }
-                          >
-                            {EDITABLE_PROJECT_STATUS_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </label>
 
                         <label className="projects-page__field projects-page__field--full">

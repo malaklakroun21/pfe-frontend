@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { dashboardApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import MentorValidationInbox from "./MentorValidationInbox.jsx";
 import "./Validation.css";
 
@@ -50,7 +51,8 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
       (skill) => skill.label.trim().toLowerCase() === normalizedCustomSkillName.toLowerCase(),
     ) ?? null;
   const selectedSkill =
-    normalizedCustomSkillName
+    selectedSkillFromOption ??
+    (normalizedCustomSkillName
       ? (selectedSkillFromTypedName ?? {
           id: "custom-skill",
           skillId: "",
@@ -58,26 +60,23 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           description: "Manual validation request",
           evidenceCount: 0,
         })
-      : selectedSkillFromOption;
+      : null);
+  const hasExistingSkillMatch = Boolean(selectedSkillFromTypedName || selectedSkillFromOption);
   const recommendedMentorId = getRecommendedMentorId(
     mentorOptions,
-    selectedSkillFromTypedName?.id || selectedSkillFromOption?.id || ""
+    selectedSkill?.id || ""
   );
-  const mentorStillExists = mentorOptions.some((mentor) => mentor.id === selectedMentorId);
-  const effectiveSelectedMentorId = mentorStillExists
-    ? selectedMentorId
-    : recommendedMentorId;
+  const recommendedMentor = mentorOptions.find((mentor) => mentor.id === recommendedMentorId) ?? null;
 
   const currentStep = steps[activeStepIndex] ?? steps[0] ?? null;
-  const selectedMentor =
-    mentorOptions.find((mentor) => mentor.id === effectiveSelectedMentorId) ?? null;
+  const selectedMentor = mentorOptions.find((mentor) => mentor.id === selectedMentorId) ?? null;
   const selectedSkillEvidenceCount = selectedSkill?.evidenceCount ?? 0;
   const hasExistingEvidence = selectedSkillEvidenceCount > 0;
   const hasPortfolioLink = portfolioLink.trim().length > 0;
 
   const canContinueByStep = {
     "select-skill": Boolean(selectedSkill),
-    "choose-mentor": Boolean(effectiveSelectedMentorId),
+    "choose-mentor": Boolean(selectedMentorId),
     evidence: hasExistingEvidence || hasPortfolioLink,
     submit: Boolean(selectedSkill && selectedMentor),
   };
@@ -140,15 +139,36 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
         return (
           <div className="validation-page__wizard-body">
             <div className="validation-page__wizard-copy">
-              <h4>Write the skill you want to validate</h4>
+              <h4>Select or type the skill you want to validate</h4>
               <p>
-                Type your skill yourself. If it already exists in your backend profile, the
-                request will reuse that skill automatically.
+                Choose an existing skill from the app, or type a new one manually. If the skill
+                already exists on your backend profile, the request will reuse it automatically.
               </p>
             </div>
 
+            {skillOptions.length > 0 ? (
+              <label className="validation-page__wizard-field">
+                <span>Skill list</span>
+                <ThemedSelect
+                  value={selectedSkillId}
+                  options={[
+                    { value: "", label: "Choose one skill" },
+                    ...skillOptions.map((skill) => ({
+                      value: skill.id,
+                      label: skill.label,
+                      description: skill.description,
+                    })),
+                  ]}
+                  onChange={(nextValue) => {
+                    setSelectedSkillId(nextValue);
+                    setCustomSkillName("");
+                  }}
+                />
+              </label>
+            ) : null}
+
             <label className="validation-page__wizard-field">
-              <span>Skill name</span>
+              <span>{skillOptions.length > 0 ? "Or type a new skill" : "Skill name"}</span>
               <input
                 type="text"
                 placeholder="e.g. Node.js API Development"
@@ -162,10 +182,32 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
               />
             </label>
 
-            {skillOptions.length === 0 ? (
+            {skillOptions.length > 0 ? (
+              <p className="validation-page__wizard-helper">
+                {skillOptions.length} skills available in the app. You can choose one from the
+                list or write your own.
+              </p>
+            ) : (
               <div className="validation-page__wizard-empty-state">
-                <strong>No backend skill found yet.</strong>
+                <strong>No skill is available in the app yet.</strong>
                 <p>Your typed skill will be sent manually for validation.</p>
+              </div>
+            )}
+
+            {selectedSkill ? (
+              <div
+                className={`validation-page__skill-selection-feedback ${
+                  hasExistingSkillMatch
+                    ? "validation-page__skill-selection-feedback--matched"
+                    : "validation-page__skill-selection-feedback--custom"
+                }`}
+              >
+                <strong>{selectedSkill.label}</strong>
+                <p>
+                  {hasExistingSkillMatch
+                    ? selectedSkill.description
+                    : "This skill is not in the current app list yet. It will be created on your profile and sent manually for validation."}
+                </p>
               </div>
             ) : null}
           </div>
@@ -178,27 +220,36 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
             </div>
 
             {mentorOptions.length > 0 ? (
-              <div className="validation-page__wizard-option-list validation-page__wizard-option-list--mentor">
-                {mentorOptions.map((mentor) => (
-                  <button
-                    key={mentor.id}
-                    type="button"
-                    className={`validation-page__wizard-option validation-page__wizard-option--mentor ${
-                      effectiveSelectedMentorId === mentor.id ? "is-selected" : ""
-                    }`}
-                    onClick={() => setSelectedMentorId(mentor.id)}
-                  >
-                    <div className="validation-page__mentor-main">
-                      <span className="validation-page__mentor-avatar">{mentor.initials}</span>
+              <>
+                <label className="validation-page__wizard-field">
+                  <span>Mentor list</span>
+                  <ThemedSelect
+                    value={selectedMentorId}
+                    options={[
+                      { value: "", label: "Choose one mentor" },
+                      ...mentorOptions.map((mentor) => ({
+                        value: mentor.id,
+                        label: mentor.name,
+                        description: mentor.specialty,
+                      })),
+                    ]}
+                    onChange={(nextValue) => setSelectedMentorId(nextValue)}
+                  />
+                </label>
 
-                      <div className="validation-page__mentor-copy">
-                        <strong>{mentor.name}</strong>
-                        <span>{mentor.specialty}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                {recommendedMentor && !selectedMentor ? (
+                  <p className="validation-page__wizard-helper">
+                    Recommended mentor: <strong>{recommendedMentor.name}</strong>
+                  </p>
+                ) : null}
+
+                {selectedMentor ? (
+                  <div className="validation-page__skill-selection-feedback validation-page__skill-selection-feedback--matched">
+                    <strong>{selectedMentor.name}</strong>
+                    <p>{selectedMentor.specialty}</p>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="validation-page__wizard-empty-state">
                 <strong>No mentor is available right now.</strong>

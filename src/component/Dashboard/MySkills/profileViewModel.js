@@ -68,6 +68,7 @@ export function buildProfileViewModel(profileRecord, options = {}) {
     memberSinceLabel,
     creditsLabel: String(profileRecord.credits ?? 0),
     showCredits: profileRecord.showCredits ?? true,
+    xp: profileRecord.xp ?? null,
     aboutHeading: "About Me",
     detailsHeading: "Details",
     aboutText: profileRecord.about ?? "No bio added yet.",

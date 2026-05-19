@@ -30,7 +30,7 @@
 }
 
 .admin-input,
-.admin-select {
+.admin-select .themed-select__trigger {
   height: 40px;
   padding: 0 12px;
   border-radius: 12px;
@@ -42,8 +42,29 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.admin-select {
+  width: auto;
+  min-width: 160px;
+  flex: 0 0 auto;
+}
+
+.admin-select .themed-select__trigger {
+  min-height: 40px;
+  padding-right: 38px;
+  font-size: 13px;
+}
+
+.admin-select .themed-select__menu {
+  min-width: 180px;
+}
+
+.admin-select .themed-select__option {
+  padding: 10px 12px;
+}
+
 .admin-input:focus,
-.admin-select:focus {
+.admin-select .themed-select__trigger:focus-visible,
+.admin-select.is-open .themed-select__trigger {
   border-color: #d98d64;
   box-shadow: 0 0 0 4px rgba(217, 141, 100, 0.12);
 }

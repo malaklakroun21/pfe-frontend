@@ -297,6 +297,15 @@ export const creditApi = {
   },
 };
 
+export const xpApi = {
+  getMe() {
+    return apiRequest("/xp/me");
+  },
+  getByUserId(userId) {
+    return apiRequest(`/xp/${encodeURIComponent(userId)}`);
+  },
+};
+
 export const notificationApi = {
   list() {
     return apiRequest("/notifications");

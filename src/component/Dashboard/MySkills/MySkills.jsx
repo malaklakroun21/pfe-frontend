@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { dashboardApi, projectApi, sessionApi, userApi } from "../../../api/client.js";
+import { dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
+import LevelCard from "../../XP/LevelCard.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
 
@@ -694,16 +696,11 @@ function ProjectsTab({
 
               <label className="my-profile-page__project-field">
                 <span>Status</span>
-                <select
+                <ThemedSelect
                   value={createProjectForm.status}
-                  onChange={(event) => onChangeCreateProjectField("status", event.target.value)}
-                >
-                  {PROJECT_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  options={PROJECT_STATUS_OPTIONS}
+                  onChange={(nextValue) => onChangeCreateProjectField("status", nextValue)}
+                />
               </label>
 
               <label className="my-profile-page__project-field my-profile-page__project-field--full">
@@ -985,19 +982,29 @@ function MyProfile() {
 
       try {
         const profile = userId
-          ? await Promise.all([userApi.getUserById(userId), userApi.getUserRatings(userId)]).then(
-              ([publicProfile, ratingSummary]) => {
-                return buildPublicProfileRecord(publicProfile, ratingSummary);
-              },
-            )
+          ? await Promise.all([
+              userApi.getUserById(userId),
+              userApi.getUserRatings(userId),
+              xpApi.getByUserId(userId).catch(() => null),
+            ]).then(([publicProfile, ratingSummary, xpProfile]) => {
+              return {
+                ...buildPublicProfileRecord(publicProfile, ratingSummary),
+                xp: xpProfile,
+              };
+            })
           : await dashboardApi.getProfile().then(async (ownProfile) => {
-              const [sessionsResult, projectsResult] = await Promise.allSettled([
-                sessionApi.list(),
-                projectApi.list({
-                  ownerId: ownProfile.id,
-                  limit: 100,
-                }),
+              const [xpProfile, settledResults] = await Promise.all([
+                xpApi.getMe().catch(() => null),
+                Promise.allSettled([
+                  sessionApi.list(),
+                  projectApi.list({
+                    ownerId: ownProfile.id,
+                    limit: 100,
+                  }),
+                ]),
               ]);
+              const sessionsResult = settledResults[0];
+              const projectsResult = settledResults[1];
               const listedProjects =
                 projectsResult.status === "fulfilled" && Array.isArray(projectsResult.value?.items)
                   ? projectsResult.value.items
@@ -1011,6 +1018,7 @@ function MyProfile() {
 
               return {
                 ...ownProfile,
+                xp: xpProfile,
                 sessions:
                   sessionsResult.status === "fulfilled" && Array.isArray(sessionsResult.value)
                     ? sessionsResult.value
@@ -1410,6 +1418,10 @@ function MyProfile() {
           <div className="my-profile-page__credits">
             Credits: <strong>{activeProfile.creditsLabel}</strong>
           </div>
+        ) : null}
+
+        {activeProfile.xp ? (
+          <LevelCard xpProfile={activeProfile.xp} showHistory={isOwnProfile} />
         ) : null}
       </section>
 
