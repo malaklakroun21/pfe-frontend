@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { validationApi } from "../../../api/client.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 
 export default function MentorValidationInbox() {
   const [inbox, setInbox] = useState(null);
@@ -13,13 +14,13 @@ export default function MentorValidationInbox() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadInbox = async () => {
+  const loadInbox = async (nextStatusFilter = statusFilter) => {
     setIsLoading(true);
     setHasError(false);
 
     try {
       const data = await validationApi.listMentorRequests(
-        statusFilter === "ALL" ? {} : { status: statusFilter },
+        nextStatusFilter === "ALL" ? {} : { status: nextStatusFilter },
       );
       setInbox(data);
     } catch {
@@ -30,7 +31,38 @@ export default function MentorValidationInbox() {
   };
 
   useEffect(() => {
-    loadInbox();
+    let isActive = true;
+
+    async function fetchInbox() {
+      try {
+        const data = await validationApi.listMentorRequests(
+          statusFilter === "ALL" ? {} : { status: statusFilter },
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setInbox(data);
+        setHasError(false);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setHasError(true);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchInbox();
+
+    return () => {
+      isActive = false;
+    };
   }, [statusFilter]);
 
   const handleAccept = async (requestId) => {
@@ -110,15 +142,20 @@ export default function MentorValidationInbox() {
 
         <label className="validation-page__mentor-filter">
           <span>Filter</span>
-          <select
+          <ThemedSelect
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="PENDING">Pending</option>
-            <option value="VALIDATED">Validated</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="ALL">All</option>
-          </select>
+            options={[
+              { value: "PENDING", label: "Pending" },
+              { value: "VALIDATED", label: "Validated" },
+              { value: "REJECTED", label: "Rejected" },
+              { value: "ALL", label: "All" },
+            ]}
+            onChange={(nextValue) => {
+              setIsLoading(true);
+              setHasError(false);
+              setStatusFilter(nextValue);
+            }}
+          />
         </label>
       </div>
 

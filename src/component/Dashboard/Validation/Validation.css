@@ -317,6 +317,7 @@
 }
 
 .validation-page__wizard-field input,
+.validation-page__wizard-field .themed-select__trigger,
 .validation-page__wizard-field textarea {
   width: 100%;
   box-sizing: border-box;
@@ -343,9 +344,47 @@
 }
 
 .validation-page__wizard-field input:focus,
+.validation-page__wizard-field .themed-select__trigger:focus-visible,
+.validation-page__wizard-field .themed-select.is-open .themed-select__trigger,
 .validation-page__wizard-field textarea:focus {
   outline: 2px solid rgba(215, 91, 27, 0.18);
   border-color: #d75b1b;
+}
+
+.validation-page__wizard-helper {
+  margin: -2px 0 0;
+  color: #8f3c16;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.validation-page__skill-selection-feedback {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid #f1cdbd;
+}
+
+.validation-page__skill-selection-feedback strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.validation-page__skill-selection-feedback p {
+  margin: 0;
+  color: #7b3b1e;
+  line-height: 1.55;
+}
+
+.validation-page__skill-selection-feedback--matched {
+  background: #eef8f0;
+  border-color: #c7e5cf;
+}
+
+.validation-page__skill-selection-feedback--custom {
+  background: #fff8f3;
+  border-color: #f1c7b6;
 }
 
 .validation-page__wizard-tips {
@@ -906,12 +945,20 @@
   font-size: 0.9rem;
 }
 
-.validation-page__mentor-filter select {
+.validation-page__mentor-filter .themed-select__trigger {
   min-width: 160px;
-  padding: 10px 12px;
-  border: 1px solid #e7d7bf;
-  border-radius: 12px;
-  background: #fff;
+  padding: 12px 16px;
+  border: 1px solid rgba(241, 198, 176, 0.95);
+  border-radius: 18px;
+  background-color: #ffffff;
+  color: #10213f;
+  font: inherit;
+}
+
+.validation-page__mentor-filter .themed-select__trigger:focus-visible,
+.validation-page__mentor-filter .themed-select.is-open .themed-select__trigger {
+  outline: 2px solid rgba(215, 91, 27, 0.18);
+  border-color: #d75b1b;
 }
 
 .validation-page__mentor-error {

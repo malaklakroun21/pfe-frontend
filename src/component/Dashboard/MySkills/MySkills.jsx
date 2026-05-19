@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
 import LevelCard from "../../XP/LevelCard.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "./MySkills.css";
 import { buildProfileViewModel } from "./profileViewModel.js";
 
@@ -695,16 +696,11 @@ function ProjectsTab({
 
               <label className="my-profile-page__project-field">
                 <span>Status</span>
-                <select
+                <ThemedSelect
                   value={createProjectForm.status}
-                  onChange={(event) => onChangeCreateProjectField("status", event.target.value)}
-                >
-                  {PROJECT_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  options={PROJECT_STATUS_OPTIONS}
+                  onChange={(nextValue) => onChangeCreateProjectField("status", nextValue)}
+                />
               </label>
 
               <label className="my-profile-page__project-field my-profile-page__project-field--full">

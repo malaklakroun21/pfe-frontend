@@ -584,10 +584,10 @@
 }
 
 .my-profile-page__project-field input,
-.my-profile-page__project-field select,
+.my-profile-page__project-field .themed-select__trigger,
 .my-profile-page__project-field textarea,
 .my-profile-page__session-field input,
-.my-profile-page__session-field select,
+.my-profile-page__session-field .themed-select__trigger,
 .my-profile-page__session-field textarea {
   width: 100%;
   min-height: 46px;
@@ -607,10 +607,12 @@
 }
 
 .my-profile-page__project-field input:focus,
-.my-profile-page__project-field select:focus,
+.my-profile-page__project-field .themed-select__trigger:focus-visible,
+.my-profile-page__project-field .themed-select.is-open .themed-select__trigger,
 .my-profile-page__project-field textarea:focus,
 .my-profile-page__session-field input:focus,
-.my-profile-page__session-field select:focus,
+.my-profile-page__session-field .themed-select__trigger:focus-visible,
+.my-profile-page__session-field .themed-select.is-open .themed-select__trigger,
 .my-profile-page__session-field textarea:focus {
   outline: 2px solid rgba(223, 90, 28, 0.18);
   border-color: #df5a1c;

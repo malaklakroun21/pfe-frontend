@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { userApi } from "../../../api/client.js";
 import { updateAuthUser } from "../../../authSession.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "./Settings.css";
 
 const initialFormValues = {
@@ -503,19 +504,24 @@ function Settings() {
         <div className="settings-page__field-grid">
           <label className="settings-page__field">
             <span>Location</span>
-            <select
+            <ThemedSelect
               name="cityId"
               value={formValues.cityId}
-              onChange={handleChange}
+              options={[
+                { value: "", label: "Select an Algerian city" },
+                ...locationOptions.map((city) => ({
+                  value: city.id,
+                  label: city.label,
+                })),
+              ]}
+              onChange={(nextValue) =>
+                setFormValues((current) => ({
+                  ...current,
+                  cityId: nextValue,
+                }))
+              }
               disabled={isLoading || isSaving}
-            >
-              <option value="">Select an Algerian city</option>
-              {locationOptions.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.label}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <label className="settings-page__field">

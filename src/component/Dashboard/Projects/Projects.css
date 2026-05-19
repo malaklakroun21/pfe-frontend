@@ -383,7 +383,7 @@
 }
 
 .projects-page__field input,
-.projects-page__field select,
+.projects-page__field .themed-select__trigger,
 .projects-page__field textarea {
   width: 100%;
   min-height: 52px;
@@ -401,7 +401,8 @@
 }
 
 .projects-page__field input:focus,
-.projects-page__field select:focus,
+.projects-page__field .themed-select__trigger:focus-visible,
+.projects-page__field .themed-select.is-open .themed-select__trigger,
 .projects-page__field textarea:focus {
   outline: 2px solid rgba(215, 91, 27, 0.18);
   border-color: #d75b1b;

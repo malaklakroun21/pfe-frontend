@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import ViewFrame from "../../Dashboard/Layout/ViewFrame/ViewFrame.jsx";
 import AdminPageHeader from "../AdminPageHeader.jsx";
 import { adminApi } from "../../../api/client.js";
+import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "../adminUi.css";
 
 const STATUS_OPTIONS = ["", "PENDING", "UNDER_REVIEW", "RESOLVED", "DISMISSED"];
@@ -33,17 +34,27 @@ function AdminReports() {
           reportStatus: reportStatus || undefined,
           assignedTo: assignedTo.trim() || undefined,
         });
-        if (!isActive) return;
+
+        if (!isActive) {
+          return;
+        }
+
         setData(response);
       } catch (error) {
-        if (!isActive) return;
+        if (!isActive) {
+          return;
+        }
+
         setErrorMessage(error.message);
       } finally {
-        if (isActive) setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadReports();
+
     return () => {
       isActive = false;
     };
@@ -57,6 +68,7 @@ function AdminReports() {
   const handleUpdateStatus = async (reportId, nextStatus) => {
     setBusyReportId(reportId);
     setErrorMessage("");
+
     try {
       await adminApi.updateReport(reportId, { reportStatus: nextStatus, resolution: "" });
       const response = await adminApi.listReports({
@@ -80,6 +92,7 @@ function AdminReports() {
 
     setBusyReportId(reportId);
     setErrorMessage("");
+
     try {
       await adminApi.updateReport(reportId, { reportStatus: status, resolution });
       const response = await adminApi.listReports({
@@ -103,21 +116,19 @@ function AdminReports() {
           <div className="admin-toolbar__group">
             <div className="admin-field">
               <label htmlFor="admin-reports-status">Status</label>
-              <select
+              <ThemedSelect
                 id="admin-reports-status"
                 className="admin-select"
                 value={reportStatus}
-                onChange={(e) => {
+                options={STATUS_OPTIONS.map((value) => ({
+                  value,
+                  label: value || "All",
+                }))}
+                onChange={(nextValue) => {
                   setPage(1);
-                  setReportStatus(e.target.value);
+                  setReportStatus(nextValue);
                 }}
-              >
-                {STATUS_OPTIONS.map((value) => (
-                  <option key={value || "all"} value={value}>
-                    {value ? value : "All"}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="admin-field">
@@ -127,9 +138,9 @@ function AdminReports() {
                 className="admin-input"
                 placeholder="ADMIN-USER-ID"
                 value={assignedTo}
-                onChange={(e) => {
+                onChange={(event) => {
                   setPage(1);
-                  setAssignedTo(e.target.value);
+                  setAssignedTo(event.target.value);
                 }}
               />
             </div>
@@ -179,52 +190,55 @@ function AdminReports() {
                   return (
                     <tr key={reportId}>
                       <td>
-                        <strong>{report.reportId || "—"}</strong>
+                        <strong>{report.reportId || "-"}</strong>
                         <div className="admin-muted">
-                          Target: {report.reportedUserId || "—"} • Created:{" "}
-                          {report.createdAt ? new Date(report.createdAt).toLocaleString() : "—"}
+                          Target: {report.reportedUserId || "-"} | Created:{" "}
+                          {report.createdAt ? new Date(report.createdAt).toLocaleString() : "-"}
                         </div>
                       </td>
-                      <td>{report.reportStatus || "—"}</td>
-                      <td>{report.assignedTo || "—"}</td>
+                      <td>{report.reportStatus || "-"}</td>
+                      <td>{report.assignedTo || "-"}</td>
                       <td>
                         <div className="admin-toolbar__group">
-                          <select
+                          <ThemedSelect
                             className="admin-select"
+                            placeholder="Update status..."
                             defaultValue=""
+                            resetAfterSelect
+                            options={STATUS_OPTIONS.filter(Boolean).map((value) => ({
+                              value,
+                              label: value,
+                            }))}
                             disabled={isBusy}
-                            onChange={(e) => {
-                              const nextStatus = e.target.value;
-                              e.target.value = "";
-                              if (!nextStatus) return;
-                              handleUpdateStatus(reportId, nextStatus);
+                            onChange={(nextValue) => {
+                              if (!nextValue) {
+                                return;
+                              }
+
+                              handleUpdateStatus(reportId, nextValue);
                             }}
-                          >
-                            <option value="">Update status…</option>
-                            {STATUS_OPTIONS.filter(Boolean).map((value) => (
-                              <option key={value} value={value}>
-                                {value}
-                              </option>
-                            ))}
-                          </select>
+                          />
 
                           <details>
                             <summary className="admin-muted" style={{ cursor: "pointer" }}>
                               Add resolution
                             </summary>
-                            <form onSubmit={(e) => handleResolutionSubmit(reportId, e)}>
+                            <form onSubmit={(event) => handleResolutionSubmit(reportId, event)}>
                               <div className="admin-toolbar__group" style={{ marginTop: 8 }}>
-                                <select name="status" className="admin-select" defaultValue="UNDER_REVIEW">
-                                  {STATUS_OPTIONS.filter(Boolean).map((value) => (
-                                    <option key={value} value={value}>
-                                      {value}
-                                    </option>
-                                  ))}
-                                </select>
+                                <ThemedSelect
+                                  name="status"
+                                  className="admin-select"
+                                  defaultValue="UNDER_REVIEW"
+                                  options={STATUS_OPTIONS.filter(Boolean).map((value) => ({
+                                    value,
+                                    label: value,
+                                  }))}
+                                  disabled={isBusy}
+                                />
                                 <input
                                   name="resolution"
                                   className="admin-input"
-                                  placeholder="Resolution note…"
+                                  placeholder="Resolution note..."
                                   style={{ minWidth: 220 }}
                                 />
                                 <button type="submit" className="admin-button" disabled={isBusy}>
@@ -250,7 +264,7 @@ function AdminReports() {
               type="button"
               className="admin-button admin-button--ghost"
               disabled={isLoading || page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
             >
               Prev
             </button>
@@ -258,7 +272,7 @@ function AdminReports() {
               type="button"
               className="admin-button admin-button--ghost"
               disabled={isLoading || page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
             >
               Next
             </button>
@@ -270,4 +284,3 @@ function AdminReports() {
 }
 
 export default AdminReports;
-
