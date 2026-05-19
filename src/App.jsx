@@ -20,6 +20,7 @@ import DashboardHome from './component/Dashboard/DashboardHome/DashboardHome.jsx
 import MyProfile from './component/Dashboard/MySkills/MySkills.jsx'
 import Explore from './component/Dashboard/Explore/Explore.jsx'
 import Sessions from './component/Dashboard/Sessions/Sessions.jsx'
+import MySessions from './component/Dashboard/MySessions/MySessions.jsx'
 import Projects from './component/Dashboard/Projects/Projects.jsx'
 import Messages from './component/Dashboard/Messages/Messages.jsx'
 import Credits from './component/Dashboard/Credits/Credits.jsx'
@@ -434,6 +435,7 @@ const App = () => {
         <Route path="explore" element={<Explore />} />
         <Route path="sessions" element={<Sessions />} />
         <Route path="sessions/:categoryKey" element={<Sessions />} />
+        <Route path="my-sessions" element={<MySessions />} />
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:projectId" element={<Projects />} />
         <Route path="messages" element={<Messages />} />

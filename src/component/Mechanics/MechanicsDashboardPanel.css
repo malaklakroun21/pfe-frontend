@@ -1,0 +1,108 @@
+.mechanics-dashboard {
+  margin-top: 28px;
+  display: grid;
+  gap: 28px;
+}
+
+.mechanics-dashboard__top {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.mechanics-dashboard__trust-panel,
+.mechanics-dashboard__confirm-panel {
+  border: 1px solid rgba(241, 229, 214, 0.96);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(204, 185, 160, 0.1);
+  padding: 24px 28px 28px;
+}
+
+.mechanics-dashboard__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mechanics-dashboard__panel-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #7b3510;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mechanics-dashboard__panel-head button {
+  border: none;
+  background: transparent;
+  color: #de5d1a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mechanics-dashboard__skills {
+  display: grid;
+  gap: 12px;
+}
+
+.mechanics-dashboard__empty {
+  margin: 0;
+  color: #7f2e0a;
+  font-size: 0.95rem;
+}
+
+.mechanics-dashboard__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #fdecd5;
+  color: #9a3412;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.mechanics-dashboard__confirm-list {
+  display: grid;
+  gap: 16px;
+}
+
+.mechanics-dashboard__confirm-item {
+  display: grid;
+  gap: 10px;
+}
+
+.mechanics-dashboard__confirm-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.mechanics-dashboard__confirm-meta strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.mechanics-dashboard__confirm-meta span {
+  color: #7f2e0a;
+  font-size: 0.88rem;
+}
+
+.mechanics-dashboard__error {
+  margin: 0 0 12px;
+  color: #b42318;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 960px) {
+  .mechanics-dashboard__top {
+    grid-template-columns: 1fr;
+  }
+}

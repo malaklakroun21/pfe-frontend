@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { creditApi, userApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
+import CreditsCard from "../../Mechanics/CreditsCard.jsx";
+import LevelCard from "../../XP/LevelCard.jsx";
 import "./Credits.css";
+import "../../Mechanics/Mechanics.css";
 
 const earningTips = [
   {
@@ -196,6 +199,9 @@ function Credits() {
   const [monthlyHighlights, setMonthlyHighlights] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [totals, setTotals] = useState({ earned: 0, spent: 0 });
+  const [weeklyEarned, setWeeklyEarned] = useState(0);
+  const [weeklyCap, setWeeklyCap] = useState(5);
+  const [xpProfile, setXpProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -277,9 +283,12 @@ function Credits() {
         });
 
         setCurrentBalance(balance);
+        setWeeklyEarned(Number(creditProfile?.weeklyEarned ?? 0));
+        setWeeklyCap(Number(creditProfile?.weeklyCap ?? 5));
+        setXpProfile(creditProfile?.xp ?? null);
         setTotals({
-          earned: totalEarned,
-          spent: totalSpent,
+          earned: creditProfile?.earned ?? totalEarned,
+          spent: creditProfile?.spent ?? totalSpent,
         });
         setMonthlyHighlights([
           {
@@ -331,6 +340,15 @@ function Credits() {
   return (
     <section className="credits-page">
       {errorMessage ? <p>{errorMessage}</p> : null}
+
+      {isLoading ? <p>Loading credits...</p> : null}
+
+      {!isLoading ? (
+        <div className="credits-page__mechanics-row">
+          <CreditsCard balance={currentBalance} weeklyEarned={weeklyEarned} weeklyCap={weeklyCap} />
+          {xpProfile ? <LevelCard xpProfile={xpProfile} /> : null}
+        </div>
+      ) : null}
 
       <article className="credits-page__balance-card">
         <div className="credits-page__balance-topline">

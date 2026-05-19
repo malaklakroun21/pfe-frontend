@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../../api/client.js";
+import { useAuthSession } from "../../../authSession.js";
+import MechanicsDashboardPanel from "../../Mechanics/MechanicsDashboardPanel.jsx";
 import LevelCard from "../../XP/LevelCard.jsx";
 import Header from "../Layout/Header/Header.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
@@ -150,6 +152,23 @@ function StatIcon({ icon }) {
       return <ValidationApprovedIcon />;
     case "validation-rejected":
       return <ValidationRejectedIcon />;
+    case "trust":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 3.75 17.5 6v6.1c0 3.12-2.08 5.98-5.5 8.15-3.42-2.17-5.5-5.03-5.5-8.15V6L12 3.75Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          />
+          <path
+            d="m9.5 11.75 1.6 1.65 3-3.4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
     default:
       return null;
   }
@@ -167,6 +186,7 @@ function formatSubmittedAt(value) {
 
 function DashboardHome() {
   const navigate = useNavigate();
+  const { user } = useAuthSession();
   const [pageData, setPageData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -174,7 +194,7 @@ function DashboardHome() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadOverview() {
+    async function fetchOverview() {
       setIsLoading(true);
       setErrorMessage("");
 
@@ -199,12 +219,21 @@ function DashboardHome() {
       }
     }
 
-    loadOverview();
+    fetchOverview();
 
     return () => {
       isActive = false;
     };
   }, []);
+
+  async function handleRefreshMechanics() {
+    try {
+      const overview = await dashboardApi.getOverview();
+      setPageData(overview);
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
+  }
 
   const stats = pageData?.stats || [];
   const upcomingSessions = pageData?.upcomingSessions || [];
@@ -213,6 +242,7 @@ function DashboardHome() {
   const recentValidationActivity = pageData?.recentValidationActivity || [];
   const validationOverview = pageData?.validationOverview || null;
   const xpProfile = pageData?.xp || null;
+  const mechanics = pageData?.mechanics || null;
   const isMentorDashboard = pageData?.role === "mentor";
   const welcomeName = pageData?.welcome?.firstName || "Member";
   const isFirstVisit = Boolean(pageData?.welcome?.isFirstVisit);
@@ -252,6 +282,14 @@ function DashboardHome() {
               <div className="dashboard-home__xp">
                 <LevelCard xpProfile={xpProfile} showHistory />
               </div>
+            ) : null}
+
+            {mechanics ? (
+              <MechanicsDashboardPanel
+                mechanics={mechanics}
+                currentUserId={user?.userId}
+                onRefresh={handleRefreshMechanics}
+              />
             ) : null}
 
             <div className="dashboard-home__stats">
@@ -302,7 +340,7 @@ function DashboardHome() {
               <section className="dashboard-home__panel">
                 <div className="dashboard-home__panel-header">
                   <h2>Upcoming Sessions</h2>
-                  <button type="button" onClick={() => navigate("/app/skills?tab=sessions")}>
+                  <button type="button" onClick={() => navigate("/app/my-sessions")}>
                     View all
                   </button>
                 </div>

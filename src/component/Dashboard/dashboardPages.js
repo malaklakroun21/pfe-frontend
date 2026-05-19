@@ -3,6 +3,7 @@ export const dashboardSectionKeys = [
   "skills",
   "explore",
   "sessions",
+  "my-sessions",
   "projects",
   "messages",
   "credits",
@@ -97,7 +98,7 @@ export const dashboardSections = {
   sessions: {
     key: "sessions",
     route: "/app/sessions",
-    navLabel: "Sessions",
+    navLabel: "Explore Sessions",
     icon: "sessions",
     title: "Sessions",
     subtitle:
@@ -115,6 +116,30 @@ export const dashboardSections = {
       {
         title: "Discovery",
         text: "Open profiles directly from a session to start a new conversation.",
+      },
+    ],
+  },
+  "my-sessions": {
+    key: "my-sessions",
+    route: "/app/my-sessions",
+    navLabel: "My Sessions",
+    icon: "my-sessions",
+    title: "My Sessions",
+    subtitle:
+      "Confirm completed sessions, earn credits, and unlock endorsements with your partners.",
+    stats: [
+      { label: "Upcoming", value: "—", accent: "warm" },
+      { label: "Pending confirm", value: "—", accent: "soft" },
+      { label: "Completed", value: "—", accent: "dark" },
+    ],
+    cards: [
+      {
+        title: "Dual confirmation",
+        text: "Credits and XP apply only after both participants confirm completion.",
+      },
+      {
+        title: "Trust & tiers",
+        text: "Your teaching credits use skill tier and trust modifier from your profile.",
       },
     ],
   },
