@@ -202,6 +202,8 @@ export function mapOwnedSession(session, viewerUserId) {
   return {
     id: session.sessionId,
     participantUserId: otherParticipant?.userId || "",
+    teacherId: session.teacherId,
+    learnerId: session.learnerId,
     initials: buildInitials(otherParticipant),
     title: getNormalizedSessionSkillLabel(session),
     participantName: buildFullName(otherParticipant),
@@ -210,8 +212,13 @@ export function mapOwnedSession(session, viewerUserId) {
     duration: formatDurationLabel(durationHours),
     credits: formatCreditLabel(credits),
     status: statusConfig.tabKey,
+    rawStatus: normalizedStatus,
     badge: statusConfig.badge,
     description,
+    teacherConfirmed: Boolean(session.teacherConfirmed),
+    learnerConfirmed: Boolean(session.learnerConfirmed),
+    endorsementsUnlocked: Boolean(session.endorsementsUnlocked),
+    creditBreakdown: session.creditBreakdown ?? null,
     canCancel: isLearner && normalizedStatus === "PENDING",
     canDelete: normalizedStatus !== "COMPLETED",
   };

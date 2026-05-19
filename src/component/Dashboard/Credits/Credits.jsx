@@ -212,7 +212,8 @@ function Credits() {
       setErrorMessage("");
 
       try {
-        const [history, currentUser] = await Promise.all([
+        const [creditProfile, history, currentUser] = await Promise.all([
+          creditApi.getMe().catch(() => null),
           creditApi.getHistory(),
           userApi.getCurrentUser(),
         ]);
@@ -221,8 +222,14 @@ function Credits() {
           return;
         }
 
-        const balance = readNumericValue(currentUser?.timeCredits);
-        const historyItems = Array.isArray(history) ? history : [];
+        const balance = readNumericValue(
+          creditProfile?.balance ?? currentUser?.timeCredits,
+        );
+        const historyItems = Array.isArray(creditProfile?.history)
+          ? creditProfile.history
+          : Array.isArray(history)
+            ? history
+            : [];
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();

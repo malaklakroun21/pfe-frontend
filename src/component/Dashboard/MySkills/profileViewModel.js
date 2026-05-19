@@ -29,6 +29,75 @@ export function getProfilePreviewOptions(records) {
   }));
 }
 
+export function mergeProfileSkillsWithTrust(skills = [], trustProfile = null) {
+  const trustSkills = Array.isArray(trustProfile?.skills) ? trustProfile.skills : [];
+
+  if (trustSkills.length === 0) {
+    return skills;
+  }
+
+  const byName = new Map(
+    trustSkills.map((skill) => [String(skill.skillName || "").trim().toLowerCase(), skill]),
+  );
+  const byId = new Map(trustSkills.map((skill) => [skill.skillId, skill]));
+
+  const merged = skills.map((skill) => {
+    const lookupKey = String(skill.name || skill.skillName || "")
+      .trim()
+      .toLowerCase();
+    const trust = byId.get(skill.id) || byName.get(lookupKey);
+
+    if (!trust) {
+      return skill;
+    }
+
+    return {
+      ...skill,
+      id: trust.skillId || skill.id,
+      name: trust.skillName || skill.name,
+      skillName: trust.skillName || skill.name,
+      trustScore: trust.trustScore ?? skill.trustScore,
+      trustBadge: trust.trustBadge ?? skill.trustBadge,
+      trustModifier: trust.trustModifier ?? skill.trustModifier,
+      skillTier: trust.skillTier ?? skill.skillTier,
+      portfolioScore: trust.portfolioScore ?? skill.portfolioScore,
+      endorsementScore: trust.endorsementScore ?? skill.endorsementScore,
+      endorsementsCount: trust.endorsementsCount ?? skill.endorsementsCount,
+    };
+  });
+
+  const existingNames = new Set(
+    merged.map((skill) => String(skill.name || skill.skillName || "").trim().toLowerCase()),
+  );
+
+  for (const trust of trustSkills) {
+    const name = trust.skillName;
+
+    if (!name || existingNames.has(String(name).trim().toLowerCase())) {
+      continue;
+    }
+
+    merged.push({
+      id: trust.skillId,
+      name,
+      skillName: name,
+      proficiency: "Listed skill",
+      validationState: trust.validationStatus === "VALIDATED" ? "validated" : "pending",
+      showAction: false,
+      trustScore: trust.trustScore ?? 0,
+      trustBadge: trust.trustBadge ?? "Unverified",
+      trustModifier: trust.trustModifier ?? 1,
+      skillTier: trust.skillTier ?? "STARTER",
+      portfolioScore: trust.portfolioScore ?? 0,
+      endorsementScore: trust.endorsementScore ?? 0,
+      endorsementsCount: trust.endorsementsCount ?? 0,
+    });
+    existingNames.add(String(name).trim().toLowerCase());
+  }
+
+  return merged;
+}
+
 export function buildProfileViewModel(profileRecord, options = {}) {
   if (!profileRecord) {
     return null;
@@ -110,12 +179,20 @@ function buildSkillViewModel(skill) {
 
   return {
     id: skill.id ?? skill.name,
-    name: skill.name ?? "Untitled skill",
+    name: skill.name ?? skill.skillName ?? "Untitled skill",
+    skillName: skill.skillName ?? skill.name,
     proficiency,
     validationState,
     isValidated: validationState === "validated",
     showAction: skill.showAction ?? validationState !== "validated",
     validationLabel: validationState === "validated" ? "Validated" : "Request Validation",
+    trustScore: skill.trustScore ?? 0,
+    trustBadge: skill.trustBadge ?? "Unverified",
+    trustModifier: skill.trustModifier ?? 1,
+    skillTier: skill.skillTier ?? "STARTER",
+    portfolioScore: skill.portfolioScore ?? 0,
+    endorsementScore: skill.endorsementScore ?? 0,
+    endorsementsCount: skill.endorsementsCount ?? 0,
   };
 }
 

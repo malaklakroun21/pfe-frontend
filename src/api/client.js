@@ -196,6 +196,28 @@ export const sessionApi = {
       body: payload,
     });
   },
+  confirm(sessionId, payload = {}) {
+    return apiRequest("/sessions/confirm", {
+      method: "POST",
+      body: { sessionId, ...payload },
+    });
+  },
+  accept(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/accept`, {
+      method: "PATCH",
+    });
+  },
+  reject(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/reject`, {
+      method: "PATCH",
+    });
+  },
+  complete(sessionId, payload = {}) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/complete`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
   cancel(sessionId) {
     return apiRequest(`/sessions/${sessionId}/cancel`, {
       method: "PATCH",
@@ -204,6 +226,27 @@ export const sessionApi = {
   delete(sessionId) {
     return apiRequest(`/sessions/${sessionId}`, {
       method: "DELETE",
+    });
+  },
+};
+
+export const trustApi = {
+  getByUserId(userId) {
+    return apiRequest(`/trust/${encodeURIComponent(userId)}`);
+  },
+};
+
+export const skillsApi = {
+  getByUserId(userId) {
+    return apiRequest(`/skills/${encodeURIComponent(userId)}`);
+  },
+};
+
+export const endorsementApi = {
+  create(payload) {
+    return apiRequest("/endorsements", {
+      method: "POST",
+      body: payload,
     });
   },
 };
@@ -292,6 +335,9 @@ export const messageApi = {
 };
 
 export const creditApi = {
+  getMe() {
+    return apiRequest("/credits/me");
+  },
   getHistory() {
     return apiRequest("/credits/history");
   },

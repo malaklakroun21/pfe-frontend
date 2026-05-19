@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sessionApi } from "../../../api/client.js";
+import SessionConfirmationCard from "../../Mechanics/SessionConfirmationCard.jsx";
 import { useAuthSession } from "../../../authSession.js";
 import { mapOwnedSession, mySessionTabs } from "./sessionViewModel.js";
 import "./Sessions.css";
@@ -57,6 +58,7 @@ function MySessionsPanel({ embedded = false }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isCancellingSessionId, setIsCancellingSessionId] = useState("");
+  const [confirmingSessionId, setConfirmingSessionId] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -113,6 +115,32 @@ function MySessionsPanel({ embedded = false }) {
   );
 
   const filteredSessions = sessionItems.filter((item) => item.status === activeTab);
+
+  async function handleConfirmSession(session) {
+    if (!session?.id || confirmingSessionId) {
+      return;
+    }
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setConfirmingSessionId(session.id);
+
+    try {
+      await sessionApi.confirm(session.id);
+      const sessions = await sessionApi.list();
+
+      setSessionItems(
+        (Array.isArray(sessions) ? sessions : []).map((item) =>
+          mapOwnedSession(item, user.userId),
+        ),
+      );
+      setStatusMessage("Session confirmation recorded.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setConfirmingSessionId("");
+    }
+  }
 
   async function handleCancelSession(sessionId) {
     if (!sessionId || isCancellingSessionId) {
@@ -255,6 +283,15 @@ function MySessionsPanel({ embedded = false }) {
 
                       <span className="sessions-page__credits">{session.credits}</span>
                     </div>
+
+                    {session.rawStatus === "ACCEPTED" || session.rawStatus === "COMPLETED" ? (
+                      <SessionConfirmationCard
+                        session={session}
+                        currentUserId={user.userId}
+                        onConfirm={handleConfirmSession}
+                        isSubmitting={confirmingSessionId === session.id}
+                      />
+                    ) : null}
                   </div>
                 </article>
               ))

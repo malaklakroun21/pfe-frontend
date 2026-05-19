@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
+import {
+  creditApi,
+  dashboardApi,
+  endorsementApi,
+  projectApi,
+  sessionApi,
+  skillsApi,
+  userApi,
+  xpApi,
+} from "../../../api/client.js";
 import LevelCard from "../../XP/LevelCard.jsx";
+import SkillCard from "../../Mechanics/SkillCard.jsx";
+import SessionConfirmationCard from "../../Mechanics/SessionConfirmationCard.jsx";
+import EndorsementModal from "../../Mechanics/EndorsementModal.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import "./MySkills.css";
-import { buildProfileViewModel } from "./profileViewModel.js";
+import { buildProfileViewModel, mergeProfileSkillsWithTrust } from "./profileViewModel.js";
+import { mapOwnedSession } from "../Sessions/sessionViewModel.js";
+import CreditsCard from "../../Mechanics/CreditsCard.jsx";
 
 const PROJECT_STATUS_OPTIONS = [
   { value: "OPEN", label: "Open" },
@@ -278,34 +292,11 @@ function AboutTab({ profile }) {
 
 function SkillsTab({ profile }) {
   return (
-    <>
+    <div style={{ display: "grid", gap: "12px" }}>
       {profile.skills.map((skill) => (
-        <article key={skill.id} className="my-profile-page__skill-card">
-          <div className="my-profile-page__skill-head">
-            <div className="my-profile-page__skill-title-row">
-              <h3>{skill.name}</h3>
-
-              {skill.isValidated ? (
-                <span className="my-profile-page__skill-badge">
-                  <ValidationIcon />
-                  {skill.validationLabel}
-                </span>
-              ) : null}
-            </div>
-
-            {skill.showAction ? (
-              <button type="button" className="my-profile-page__skill-action">
-                {skill.validationLabel}
-              </button>
-            ) : null}
-          </div>
-
-          <p className="my-profile-page__skill-proficiency">
-            Proficiency: <strong>{skill.proficiency}</strong>
-          </p>
-        </article>
+        <SkillCard key={skill.id} skill={skill} />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -421,6 +412,7 @@ function ReviewsTab({ profile }) {
 
 function SessionsTab({
   profile,
+  currentUserId,
   isCreateFormOpen,
   createSessionForm,
   onChangeCreateSessionField,
@@ -434,6 +426,9 @@ function SessionsTab({
   onCloseSession,
   onDeleteSession,
   isDeletingSessionId,
+  onConfirmSession,
+  confirmingSessionId,
+  onRequestEndorsement,
 }) {
   return (
     <>
@@ -563,6 +558,26 @@ function SessionsTab({
           </div>
 
           <p className="my-profile-page__session-detail-copy">{selectedSession.description}</p>
+
+          {selectedSession.rawStatus === "ACCEPTED" ||
+          selectedSession.rawStatus === "COMPLETED" ? (
+            <SessionConfirmationCard
+              session={selectedSession}
+              currentUserId={currentUserId}
+              onConfirm={onConfirmSession}
+              isSubmitting={confirmingSessionId === selectedSession.id}
+            />
+          ) : null}
+
+          {selectedSession.endorsementsUnlocked && selectedSession.participantUserId ? (
+            <button
+              type="button"
+              className="my-profile-page__activity-button"
+              onClick={() => onRequestEndorsement?.(selectedSession)}
+            >
+              Endorse collaborator
+            </button>
+          ) : null}
         </article>
       ) : null}
 
@@ -600,6 +615,15 @@ function SessionsTab({
             <span>{session.duration}</span>
             <strong>{session.credits}</strong>
           </div>
+
+          {session.rawStatus === "ACCEPTED" || session.rawStatus === "COMPLETED" ? (
+            <SessionConfirmationCard
+              session={session}
+              currentUserId={currentUserId}
+              onConfirm={onConfirmSession}
+              isSubmitting={confirmingSessionId === session.id}
+            />
+          ) : null}
 
           <div className="my-profile-page__activity-actions">
             {session.canDelete ? (
@@ -885,6 +909,10 @@ function ProfileContent({
   onCloseSession,
   onDeleteSession,
   isDeletingSessionId,
+  currentUserId,
+  onConfirmSession,
+  confirmingSessionId,
+  onRequestEndorsement,
   isCreateFormOpen,
   createProjectForm,
   onChangeCreateProjectField,
@@ -925,6 +953,10 @@ function ProfileContent({
           onCloseSession={onCloseSession}
           onDeleteSession={onDeleteSession}
           isDeletingSessionId={isDeletingSessionId}
+          currentUserId={currentUserId}
+          onConfirmSession={onConfirmSession}
+          confirmingSessionId={confirmingSessionId}
+          onRequestEndorsement={onRequestEndorsement}
         />
       ) : null;
     case "projects":
@@ -976,6 +1008,9 @@ function MyProfile() {
   const [createProjectError, setCreateProjectError] = useState("");
   const [projectActionError, setProjectActionError] = useState("");
   const [isCancellingProjectId, setIsCancellingProjectId] = useState("");
+  const [confirmingSessionId, setConfirmingSessionId] = useState("");
+  const [endorsementTarget, setEndorsementTarget] = useState(null);
+  const [isSubmittingEndorsement, setIsSubmittingEndorsement] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -990,15 +1025,21 @@ function MyProfile() {
               userApi.getUserById(userId),
               userApi.getUserRatings(userId),
               xpApi.getByUserId(userId).catch(() => null),
-            ]).then(([publicProfile, ratingSummary, xpProfile]) => {
+              skillsApi.getByUserId(userId).catch(() => null),
+            ]).then(([publicProfile, ratingSummary, xpProfile, trustProfile]) => {
+              const base = buildPublicProfileRecord(publicProfile, ratingSummary);
+
               return {
-                ...buildPublicProfileRecord(publicProfile, ratingSummary),
+                ...base,
                 xp: xpProfile,
+                skills: mergeProfileSkillsWithTrust(base.skills, trustProfile),
               };
             })
           : await dashboardApi.getProfile().then(async (ownProfile) => {
-              const [xpProfile, settledResults] = await Promise.all([
+              const [xpProfile, creditProfile, trustProfile, settledResults] = await Promise.all([
                 xpApi.getMe().catch(() => null),
+                creditApi.getMe().catch(() => null),
+                skillsApi.getByUserId(ownProfile.id).catch(() => null),
                 Promise.allSettled([
                   sessionApi.list(),
                   projectApi.list({
@@ -1023,6 +1064,8 @@ function MyProfile() {
               return {
                 ...ownProfile,
                 xp: xpProfile,
+                creditProfile,
+                skills: mergeProfileSkillsWithTrust(ownProfile.skills, trustProfile),
                 sessions:
                   sessionsResult.status === "fulfilled" && Array.isArray(sessionsResult.value)
                     ? sessionsResult.value
@@ -1263,6 +1306,78 @@ function MyProfile() {
     setSessionActionError("");
   }
 
+  async function refreshMechanicsProfile() {
+    if (!user?.userId) {
+      return;
+    }
+
+    const [creditProfile, trustProfile, xpProfile] = await Promise.all([
+      creditApi.getMe().catch(() => null),
+      skillsApi.getByUserId(user.userId).catch(() => null),
+      xpApi.getMe().catch(() => null),
+    ]);
+
+    setProfileRecord((currentProfile) => {
+      if (!currentProfile) {
+        return currentProfile;
+      }
+
+      return {
+        ...currentProfile,
+        creditProfile: creditProfile ?? currentProfile.creditProfile,
+        xp: xpProfile ?? creditProfile?.xp ?? currentProfile.xp,
+        skills: mergeProfileSkillsWithTrust(currentProfile.skills, trustProfile),
+      };
+    });
+  }
+
+  async function handleConfirmSession(session) {
+    if (!session?.id || confirmingSessionId) {
+      return;
+    }
+
+    setSessionActionError("");
+    setConfirmingSessionId(session.id);
+
+    try {
+      await sessionApi.confirm(session.id);
+      await reloadOwnSessions();
+      await refreshMechanicsProfile();
+
+      const sessions = await sessionApi.list();
+      const refreshed = (Array.isArray(sessions) ? sessions : [])
+        .map((item) => mapOwnedSession(item, user.userId))
+        .find((item) => item.id === session.id);
+
+      if (refreshed) {
+        setSelectedSession(refreshed);
+      }
+    } catch (error) {
+      setSessionActionError(error.message);
+    } finally {
+      setConfirmingSessionId("");
+    }
+  }
+
+  async function handleSubmitEndorsement(payload) {
+    if (isSubmittingEndorsement) {
+      return;
+    }
+
+    setSessionActionError("");
+    setIsSubmittingEndorsement(true);
+
+    try {
+      await endorsementApi.create(payload);
+      setEndorsementTarget(null);
+      await refreshMechanicsProfile();
+    } catch (error) {
+      setSessionActionError(error.message);
+    } finally {
+      setIsSubmittingEndorsement(false);
+    }
+  }
+
   async function handleDeleteSession(sessionId) {
     if (!sessionId || isDeletingSessionId) {
       return;
@@ -1418,7 +1533,13 @@ function MyProfile() {
           )}
         </div>
 
-        {activeProfile.showCredits ? (
+        {isOwnProfile && profileRecord?.creditProfile ? (
+          <CreditsCard
+            balance={profileRecord.creditProfile.balance}
+            weeklyEarned={profileRecord.creditProfile.weeklyEarned}
+            weeklyCap={profileRecord.creditProfile.weeklyCap}
+          />
+        ) : activeProfile.showCredits ? (
           <div className="my-profile-page__credits">
             Credits: <strong>{activeProfile.creditsLabel}</strong>
           </div>
@@ -1508,8 +1629,26 @@ function MyProfile() {
           isLoadingProjectDetail={isLoadingProjectDetail}
           projectDetailError={projectDetailError}
           onCloseProject={handleCloseProject}
+          currentUserId={user?.userId}
+          onConfirmSession={handleConfirmSession}
+          confirmingSessionId={confirmingSessionId}
+          onRequestEndorsement={(session) =>
+            setEndorsementTarget({
+              sessionId: session.id,
+              targetUserId: session.participantUserId,
+            })
+          }
         />
       </section>
+
+      <EndorsementModal
+        isOpen={Boolean(endorsementTarget)}
+        targetUserId={endorsementTarget?.targetUserId}
+        sessionId={endorsementTarget?.sessionId}
+        onClose={() => setEndorsementTarget(null)}
+        onSubmit={handleSubmitEndorsement}
+        isSubmitting={isSubmittingEndorsement}
+      />
     </div>
   );
 }
