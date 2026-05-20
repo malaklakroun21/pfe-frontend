@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
+import { badgeApi, dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
 import LevelCard from "../../XP/LevelCard.jsx";
+import ProfileBadges from "../../Badges/ProfileBadges.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "./MySkills.css";
@@ -1021,15 +1022,18 @@ function MyProfile() {
               userApi.getUserById(userId),
               userApi.getUserRatings(userId),
               xpApi.getByUserId(userId).catch(() => null),
-            ]).then(([publicProfile, ratingSummary, xpProfile]) => {
+              badgeApi.getByUserId(userId, { includeLocked: false }).catch(() => null),
+            ]).then(([publicProfile, ratingSummary, xpProfile, badges]) => {
               return {
                 ...buildPublicProfileRecord(publicProfile, ratingSummary),
                 xp: xpProfile,
+                badges,
               };
             })
           : await dashboardApi.getProfile().then(async (ownProfile) => {
-              const [xpProfile, settledResults] = await Promise.all([
+              const [xpProfile, badges, settledResults] = await Promise.all([
                 xpApi.getMe().catch(() => null),
+                badgeApi.getByUserId(ownProfile.id).catch(() => null),
                 Promise.allSettled([
                   sessionApi.list({ role: 'LEARNER' }),
                   projectApi.list({
@@ -1054,6 +1058,7 @@ function MyProfile() {
               return {
                 ...ownProfile,
                 xp: xpProfile,
+                badges,
                 sessions:
                   sessionsResult.status === "fulfilled" && Array.isArray(sessionsResult.value)
                     ? sessionsResult.value
@@ -1476,6 +1481,10 @@ function MyProfile() {
 
         {activeProfile.xp ? (
           <LevelCard xpProfile={activeProfile.xp} showHistory={isOwnProfile} />
+        ) : null}
+
+        {profileRecord?.badges ? (
+          <ProfileBadges badgeProfile={profileRecord.badges} showLocked={isOwnProfile} />
         ) : null}
       </section>
 
