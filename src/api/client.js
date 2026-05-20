@@ -319,6 +319,17 @@ export const xpApi = {
   },
 };
 
+export const badgeApi = {
+  getByUserId(userId, options = {}) {
+    const params = new URLSearchParams();
+    if (options.includeLocked === false) {
+      params.set("includeLocked", "false");
+    }
+    const query = params.toString();
+    return apiRequest(`/badges/${encodeURIComponent(userId)}${query ? `?${query}` : ""}`);
+  },
+};
+
 export const notificationApi = {
   list() {
     return apiRequest("/notifications");
