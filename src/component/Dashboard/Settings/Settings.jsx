@@ -8,6 +8,7 @@ const initialFormValues = {
   fullName: "",
   email: "",
   photo: null,
+  savedPhotoUrl: "",
   bio: "",
   portfolioUrl: "",
   cityId: "",
@@ -109,6 +110,7 @@ function Settings() {
   const [linkedAccounts, setLinkedAccounts] = useState(initialLinkedAccounts);
   const [locationOptions, setLocationOptions] = useState([]);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -117,12 +119,11 @@ function Settings() {
   const uploadedResumeLabel = formatUploadDate(formValues.resumeUploadedAt);
 
   const photoPreviewUrl = useMemo(() => {
-    if (!formValues.photo) {
-      return "";
+    if (formValues.photo) {
+      return URL.createObjectURL(formValues.photo);
     }
-
-    return URL.createObjectURL(formValues.photo);
-  }, [formValues.photo]);
+    return formValues.savedPhotoUrl || "";
+  }, [formValues.photo, formValues.savedPhotoUrl]);
 
   useEffect(() => {
     return () => {
@@ -158,6 +159,7 @@ function Settings() {
           fullName,
           email: currentUser?.email || "",
           photo: null,
+          savedPhotoUrl: currentUser?.profilePicture || "",
           bio: currentUser?.bio || "",
           portfolioUrl: currentUser?.portfolioUrl || "",
           cityId: currentUser?.cityId || "",
@@ -279,6 +281,10 @@ function Settings() {
           .filter(Boolean),
       };
 
+      if (formValues.photo) {
+        payload.photo = await readFileAsDataUrl(formValues.photo);
+      }
+
       if (formValues.resumeFile) {
         payload.resumeFileName = formValues.resumeFile.name;
         payload.resumeFileDataUrl = await readFileAsDataUrl(formValues.resumeFile);
@@ -291,6 +297,8 @@ function Settings() {
       updateAuthUser(updatedUser);
       setFormValues((current) => ({
         ...current,
+        photo: null,
+        savedPhotoUrl: updatedUser?.profilePicture || current.savedPhotoUrl,
         resumeFile: null,
         resumeFileName: updatedUser?.resumeFileName || "",
         resumeDownloadUrl: updatedUser?.resumeDownloadUrl || "",
@@ -299,12 +307,12 @@ function Settings() {
       }));
 
       setStatusMessage(
-        formValues.resumeFile
-          ? "Profile saved successfully. CV uploaded."
-          : formValues.removeResume
-            ? "Profile saved successfully. CV removed."
-            : formValues.photo
-              ? "Profile saved. The photo preview remains local until an upload endpoint is added."
+        formValues.photo
+          ? "Profile saved successfully. Photo updated."
+          : formValues.resumeFile
+            ? "Profile saved successfully. CV uploaded."
+            : formValues.removeResume
+              ? "Profile saved successfully. CV removed."
               : "Profile saved successfully.",
       );
     } catch (error) {
@@ -314,8 +322,23 @@ function Settings() {
     }
   };
 
-  const handlePasswordSubmit = (event) => {
+  const handlePasswordSubmit = async (event) => {
     event.preventDefault();
+    setErrorMessage("");
+    setStatusMessage("");
+
+    try {
+      await userApi.changePassword({
+        currentPassword: passwordValues.currentPassword,
+        newPassword: passwordValues.newPassword,
+        confirmPassword: passwordValues.confirmPassword,
+      });
+      setPasswordValues(initialPasswordValues);
+      setShowPasswordForm(false);
+      setStatusMessage("Password changed successfully.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   };
 
   const togglePreference = (key) => {
@@ -541,95 +564,89 @@ function Settings() {
         </button>
       </form>
 
-      <form className="settings-page__card" onSubmit={handlePasswordSubmit}>
+      <div className="settings-page__card">
         <h2 className="settings-page__title">Change Password</h2>
 
-        <label className="settings-page__field">
-          <span>Current Password</span>
-          <div className="settings-page__password-wrap">
-            <input
-              type={showCurrentPassword ? "text" : "password"}
-              name="currentPassword"
-              value={passwordValues.currentPassword}
-              onChange={handlePasswordChange}
-            />
-            <button
-              type="button"
-              className="settings-page__password-toggle"
-              aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
-              aria-pressed={showCurrentPassword}
-              onClick={() => setShowCurrentPassword((current) => !current)}
-            >
-              <EyeIcon />
-            </button>
-          </div>
-        </label>
-
-        <label className="settings-page__field">
-          <span>New Password</span>
-          <input
-            type="password"
-            name="newPassword"
-            value={passwordValues.newPassword}
-            onChange={handlePasswordChange}
-          />
-        </label>
-
-        <label className="settings-page__field">
-          <span>Confirm New Password</span>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={passwordValues.confirmPassword}
-            onChange={handlePasswordChange}
-          />
-        </label>
-
-        <button type="submit" className="settings-page__submit">
-          Update Password
-        </button>
-      </form>
-
-      <section className="settings-page__card">
-        <h2 className="settings-page__title">Profile Visibility</h2>
-
-        <div className="settings-page__toggle-row">
-          <div className="settings-page__toggle-copy">
-            <h3>Public Profile</h3>
-            <p>Allow others to find and view your profile</p>
-          </div>
-
+        {!showPasswordForm ? (
           <button
             type="button"
-            role="switch"
-            aria-checked={preferences.publicProfile}
-            className={`settings-page__switch ${
-              preferences.publicProfile ? "is-active" : ""
-            }`}
-            onClick={() => togglePreference("publicProfile")}
+            className="settings-page__submit settings-page__submit--inline"
+            onClick={() => setShowPasswordForm(true)}
           >
-            <span className="settings-page__switch-thumb" />
+            Change Password
           </button>
-        </div>
-      </section>
+        ) : (
+          <form
+            className="settings-page__password-form"
+            onSubmit={handlePasswordSubmit}
+          >
+            <label className="settings-page__field">
+              <span>Current Password</span>
+              <div className="settings-page__password-wrap">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  name="currentPassword"
+                  value={passwordValues.currentPassword}
+                  onChange={handlePasswordChange}
+                />
+                <button
+                  type="button"
+                  className="settings-page__password-toggle"
+                  aria-label={showCurrentPassword ? "Hide" : "Show"}
+                  onClick={() => setShowCurrentPassword((c) => !c)}
+                >
+                  <EyeIcon />
+                </button>
+              </div>
+            </label>
+
+            <label className="settings-page__field">
+              <span>New Password</span>
+              <input
+                type="password"
+                name="newPassword"
+                value={passwordValues.newPassword}
+                onChange={handlePasswordChange}
+              />
+            </label>
+
+            <label className="settings-page__field">
+              <span>Confirm New Password</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={passwordValues.confirmPassword}
+                onChange={handlePasswordChange}
+              />
+            </label>
+
+            <div className="settings-page__password-actions">
+              <button
+                type="button"
+                className="settings-page__submit settings-page__submit--ghost"
+                onClick={() => setShowPasswordForm(false)}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="settings-page__submit settings-page__submit--inline">
+                Update Password
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
 
       <section className="settings-page__card">
         <h2 className="settings-page__title">Notification Preferences</h2>
 
         <div className="settings-page__preferences-list">
           <div className="settings-page__toggle-row">
-            <div className="settings-page__toggle-copy">
-              <h3>Email Notifications</h3>
-              <p>Receive updates via email</p>
-            </div>
-
+            <h3 className="settings-page__toggle-label">Email Notifications</h3>
             <button
               type="button"
               role="switch"
               aria-checked={preferences.emailNotifications}
-              className={`settings-page__switch ${
-                preferences.emailNotifications ? "is-active" : ""
-              }`}
+              className={`settings-page__switch ${preferences.emailNotifications ? "is-active" : ""}`}
               onClick={() => togglePreference("emailNotifications")}
             >
               <span className="settings-page__switch-thumb" />
@@ -637,18 +654,12 @@ function Settings() {
           </div>
 
           <div className="settings-page__toggle-row">
-            <div className="settings-page__toggle-copy">
-              <h3>Session Reminders</h3>
-              <p>Get reminded about upcoming sessions</p>
-            </div>
-
+            <h3 className="settings-page__toggle-label">Session Reminders</h3>
             <button
               type="button"
               role="switch"
               aria-checked={preferences.sessionReminders}
-              className={`settings-page__switch ${
-                preferences.sessionReminders ? "is-active" : ""
-              }`}
+              className={`settings-page__switch ${preferences.sessionReminders ? "is-active" : ""}`}
               onClick={() => togglePreference("sessionReminders")}
             >
               <span className="settings-page__switch-thumb" />
@@ -656,18 +667,12 @@ function Settings() {
           </div>
 
           <div className="settings-page__toggle-row">
-            <div className="settings-page__toggle-copy">
-              <h3>Message Notifications</h3>
-              <p>Get notified when you receive messages</p>
-            </div>
-
+            <h3 className="settings-page__toggle-label">Message Notifications</h3>
             <button
               type="button"
               role="switch"
               aria-checked={preferences.messageNotifications}
-              className={`settings-page__switch ${
-                preferences.messageNotifications ? "is-active" : ""
-              }`}
+              className={`settings-page__switch ${preferences.messageNotifications ? "is-active" : ""}`}
               onClick={() => togglePreference("messageNotifications")}
             >
               <span className="settings-page__switch-thumb" />
@@ -676,40 +681,6 @@ function Settings() {
         </div>
       </section>
 
-      <section className="settings-page__card">
-        <h2 className="settings-page__title">Linked Accounts</h2>
-
-        <div className="settings-page__linked-list">
-          {linkedAccounts.length > 0 ? (
-            linkedAccounts.map((account) => (
-              <article key={account.id} className="settings-page__linked-card">
-                <div className="settings-page__linked-main">
-                  <span className="settings-page__linked-icon" aria-hidden="true">
-                    <span className="settings-page__linked-icon-letter">G</span>
-                  </span>
-
-                  <div className="settings-page__linked-copy">
-                    <h3>{account.provider}</h3>
-                    <p>{account.email}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className={`settings-page__linked-action ${
-                    account.connected ? "is-disconnect" : "is-connect"
-                  }`}
-                  onClick={() => handleLinkedAccountToggle(account.id)}
-                >
-                  {account.connected ? "Disconnect" : "Connect"}
-                </button>
-              </article>
-            ))
-          ) : (
-            <p>No linked accounts available from the backend yet.</p>
-          )}
-        </div>
-      </section>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import {
   deleteNotification,
@@ -149,6 +150,7 @@ function NotificationBadgeIcon({ type }) {
 
 function Notifications() {
   const { notifications, isLoading, errorMessage } = useNotificationsState();
+  const navigate = useNavigate();
 
   return (
     <ViewFrame
@@ -181,7 +183,12 @@ function Notifications() {
                 key={notification.id}
                 className={`notifications-page__card ${
                   notification.read ? "is-read" : "is-unread"
-                }`}
+                } ${notification.type === "request" ? "is-clickable" : ""}`}
+                onClick={
+                  notification.type === "request"
+                    ? () => navigate("/app/validation")
+                    : undefined
+                }
               >
                 <div className="notifications-page__card-main">
                   <div className="notifications-page__badge">

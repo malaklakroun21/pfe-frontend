@@ -110,6 +110,24 @@
   font-weight: 700;
 }
 
+.sessions-page__create-button {
+  flex: 0 0 auto;
+  padding: 10px 22px;
+  background: #d75b1b;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+
+.sessions-page__create-button:hover {
+  background: #b84d14;
+}
+
 .sessions-page__status-message {
   margin: 0 0 20px;
   color: #0b7a69;

@@ -61,6 +61,7 @@ export function buildProfileViewModel(profileRecord, options = {}) {
     id: profileRecord.id ?? "preview-user",
     fullName: profileRecord.fullName ?? "Unknown User",
     initials: getProfileInitials(profileRecord.fullName),
+    photo: profileRecord.profilePicture || "",
     roleLabel: profileRecord.roleLabel ?? "Community member",
     ratingLabel: formatRating(profileRecord.rating),
     location,
@@ -108,14 +109,25 @@ function buildSkillViewModel(skill) {
   const proficiency = skill.proficiency ?? skill.level ?? "Beginner";
   const validationState = skill.validationState ?? "pending";
 
+  const statusConfig = {
+    validated: { label: `Validated · score ${skill.validationScore ?? 0}/100`, pill: "validated" },
+    rejected:  { label: "Rejected · cannot teach yet", pill: "rejected" },
+    in_review: { label: "Waiting for mentor review", pill: "in_review" },
+    pending:   { label: "Not validated yet", pill: "pending" },
+  };
+
+  const config = statusConfig[validationState] ?? statusConfig.pending;
+
   return {
     id: skill.id ?? skill.name,
     name: skill.name ?? "Untitled skill",
     proficiency,
     validationState,
+    validationScore: skill.validationScore ?? 0,
     isValidated: validationState === "validated",
-    showAction: skill.showAction ?? validationState !== "validated",
-    validationLabel: validationState === "validated" ? "Validated" : "Request Validation",
+    showAction: false,
+    statusLabel: config.label,
+    statusPill: config.pill,
   };
 }
 

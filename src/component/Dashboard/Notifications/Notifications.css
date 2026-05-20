@@ -73,6 +73,16 @@
   box-shadow: 0 8px 24px rgba(205, 187, 162, 0.06);
 }
 
+.notifications-page__card.is-clickable {
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.notifications-page__card.is-clickable:hover {
+  box-shadow: 0 8px 24px rgba(228, 106, 35, 0.15);
+  transform: translateY(-1px);
+}
+
 .notifications-page__card.is-unread {
   background: linear-gradient(180deg, #fdf7e7 0%, #fbf2de 100%);
   border: 2px solid #e46a23;

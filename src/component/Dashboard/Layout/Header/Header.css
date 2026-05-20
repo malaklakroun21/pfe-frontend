@@ -128,6 +128,13 @@
   box-shadow: 0 12px 22px rgba(223, 108, 36, 0.22);
 }
 
+.dashboard-header__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .dashboard-header__avatar:focus-visible {
   outline: 3px solid rgba(223, 108, 36, 0.24);
   outline-offset: 3px;

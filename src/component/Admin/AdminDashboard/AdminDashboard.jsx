@@ -123,14 +123,6 @@ function AdminDashboard() {
               </div>
             </DashboardSection>
 
-            <DashboardSection title="Circulation des credits">
-              <div className="admin-stats-grid">
-                <StatCard label="En circulation" value={credits?.totalInCirculation} accent="active" />
-                <StatCard label="Total gagne" value={credits?.totalEarned} />
-                <StatCard label="Total depense" value={credits?.totalSpent} />
-                <StatCard label="Transactions" value={credits?.totalTransactions} />
-              </div>
-            </DashboardSection>
 
             <DashboardSection title="Sessions">
               <div className="admin-stats-grid">

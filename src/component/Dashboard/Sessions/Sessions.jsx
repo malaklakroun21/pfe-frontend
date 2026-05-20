@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { sessionApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
@@ -109,6 +109,7 @@ function getCurrentTimestamp() {
 function Sessions() {
   const { categoryKey = "" } = useParams();
   const { user } = useAuthSession();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sessionItems, setSessionItems] = useState([]);
   const [ownSessions, setOwnSessions] = useState([]);
@@ -314,6 +315,14 @@ function Sessions() {
                   ? `${filteredSessions.length} session${filteredSessions.length === 1 ? "" : "s"}`
                   : `${visibleCategoryCards.length} categor${visibleCategoryCards.length === 1 ? "y" : "ies"}`}
               </p>
+
+              <button
+                type="button"
+                className="sessions-page__create-button"
+                onClick={() => navigate("/app/profile?tab=sessions&createSession=1")}
+              >
+                Create Session
+              </button>
             </div>
           </div>
         </div>

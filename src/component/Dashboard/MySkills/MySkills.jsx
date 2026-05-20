@@ -285,20 +285,10 @@ function SkillsTab({ profile }) {
           <div className="my-profile-page__skill-head">
             <div className="my-profile-page__skill-title-row">
               <h3>{skill.name}</h3>
-
-              {skill.isValidated ? (
-                <span className="my-profile-page__skill-badge">
-                  <ValidationIcon />
-                  {skill.validationLabel}
-                </span>
-              ) : null}
+              <span className={`my-profile-page__skill-status-pill my-profile-page__skill-status-pill--${skill.statusPill}`}>
+                {skill.statusLabel}
+              </span>
             </div>
-
-            {skill.showAction ? (
-              <button type="button" className="my-profile-page__skill-action">
-                {skill.validationLabel}
-              </button>
-            ) : null}
           </div>
 
           <p className="my-profile-page__skill-proficiency">
@@ -423,6 +413,7 @@ function ReviewsTab({ profile }) {
 function SessionsTab({
   profile,
   isCreateFormOpen,
+  onOpenCreateForm,
   createSessionForm,
   onChangeCreateSessionField,
   onSubmitCreateSession,
@@ -435,7 +426,20 @@ function SessionsTab({
   onCloseSession,
   onDeleteSession,
   isDeletingSessionId,
+  teacherOptions = [],
 }) {
+  const [teacherSearch, setTeacherSearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const filteredTeachers = teacherSearch.trim()
+    ? teacherOptions.filter((t) =>
+        t.label.toLowerCase().startsWith(teacherSearch.trim().toLowerCase())
+      )
+    : teacherOptions;
+
+  const selectedTeacherName =
+    teacherOptions.find((t) => t.value === createSessionForm.teacherId)?.label ?? "";
+
   return (
     <>
       {sessionActionError ? (
@@ -459,16 +463,42 @@ function SessionsTab({
 
           <form className="my-profile-page__session-form" onSubmit={onSubmitCreateSession}>
             <div className="my-profile-page__session-form-grid">
-              <label className="my-profile-page__session-field">
-                <span>Teacher ID</span>
-                <input
-                  type="text"
-                  value={createSessionForm.teacherId}
-                  onChange={(event) => onChangeCreateSessionField("teacherId", event.target.value)}
-                  placeholder="e.g. mentor001"
-                  required
-                />
-              </label>
+              <div className="my-profile-page__session-field">
+                <span>Teacher</span>
+                <div className="my-profile-page__teacher-search">
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={createSessionForm.teacherId ? selectedTeacherName : teacherSearch}
+                    onChange={(event) => {
+                      setTeacherSearch(event.target.value);
+                      setShowSuggestions(true);
+                      if (createSessionForm.teacherId) {
+                        onChangeCreateSessionField("teacherId", "");
+                      }
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    autoComplete="off"
+                  />
+                  {showSuggestions && filteredTeachers.length > 0 && (
+                    <ul className="my-profile-page__teacher-suggestions">
+                      {filteredTeachers.map((t) => (
+                        <li
+                          key={t.value}
+                          onMouseDown={() => {
+                            onChangeCreateSessionField("teacherId", t.value);
+                            setTeacherSearch("");
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {t.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
 
               <label className="my-profile-page__session-field">
                 <span>Skill</span>
@@ -869,6 +899,7 @@ function ProfileContent({
   activeTabKey,
   isOwnProfile,
   isSessionCreateFormOpen,
+  onOpenSessionCreateForm,
   createSessionForm,
   onChangeCreateSessionField,
   onSubmitCreateSession,
@@ -896,6 +927,7 @@ function ProfileContent({
   isLoadingProjectDetail,
   projectDetailError,
   onCloseProject,
+  teacherOptions = [],
 }) {
   switch (activeTabKey) {
     case "skills":
@@ -909,6 +941,7 @@ function ProfileContent({
         <SessionsTab
           profile={profile}
           isCreateFormOpen={isSessionCreateFormOpen}
+          onOpenCreateForm={onOpenSessionCreateForm}
           createSessionForm={createSessionForm}
           onChangeCreateSessionField={onChangeCreateSessionField}
           onSubmitCreateSession={onSubmitCreateSession}
@@ -921,6 +954,7 @@ function ProfileContent({
           onCloseSession={onCloseSession}
           onDeleteSession={onDeleteSession}
           isDeletingSessionId={isDeletingSessionId}
+          teacherOptions={teacherOptions}
         />
       ) : null;
     case "projects":
@@ -961,6 +995,7 @@ function MyProfile() {
   const [createSessionForm, setCreateSessionForm] = useState(EMPTY_SESSION_FORM);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [createSessionError, setCreateSessionError] = useState("");
+  const [teacherOptions, setTeacherOptions] = useState([]);
   const [sessionActionError, setSessionActionError] = useState("");
   const [selectedSession, setSelectedSession] = useState(null);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState("");
@@ -996,9 +1031,9 @@ function MyProfile() {
               const [xpProfile, settledResults] = await Promise.all([
                 xpApi.getMe().catch(() => null),
                 Promise.allSettled([
-                  sessionApi.list(),
+                  sessionApi.list({ role: 'LEARNER' }),
                   projectApi.list({
-                    ownerId: ownProfile.id,
+                    memberId: ownProfile.id,
                     limit: 100,
                   }),
                 ]),
@@ -1086,10 +1121,17 @@ function MyProfile() {
     navigate(`/app/messages?user=${encodeURIComponent(activeProfile.id)}`);
   }
 
-  function handleCreateSession() {
+  async function handleCreateSession() {
     setSelectedSession(null);
     setCreateSessionError("");
     setSessionActionError("");
+
+    if (teacherOptions.length === 0) {
+      sessionApi.getTeacherDirectory().then((data) => {
+        const options = (Array.isArray(data) ? data : []).map((t) => ({ value: t.id, label: t.name }));
+        setTeacherOptions(options);
+      }).catch(() => {});
+    }
 
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.set("tab", "sessions");
@@ -1194,7 +1236,7 @@ function MyProfile() {
   }
 
   async function reloadOwnSessions() {
-    const sessions = await sessionApi.list();
+    const sessions = await sessionApi.list({ role: 'LEARNER' });
 
     setProfileRecord((currentProfile) => {
       if (!currentProfile) {
@@ -1221,6 +1263,10 @@ function MyProfile() {
 
     try {
       const parsedDate = new Date(createSessionForm.date);
+
+      if (!createSessionForm.teacherId.trim()) {
+        throw new Error("Please select a teacher.");
+      }
 
       if (Number.isNaN(parsedDate.getTime())) {
         throw new Error("Please choose a valid date and time.");
@@ -1351,7 +1397,15 @@ function MyProfile() {
                 "--profile-avatar-to": activeProfile.avatarTheme.to,
               }}
             >
-              {activeProfile.initials}
+              {activeProfile.photo ? (
+                <img
+                  src={activeProfile.photo}
+                  alt={activeProfile.fullName}
+                  className="my-profile-page__avatar-img"
+                />
+              ) : (
+                activeProfile.initials
+              )}
             </div>
 
             <div className="my-profile-page__details">
@@ -1450,25 +1504,6 @@ function MyProfile() {
           ))}
         </nav>
 
-        {isOwnProfile ? (
-          <div className="my-profile-page__tab-actions">
-            <button
-              type="button"
-              className="my-profile-page__tab-action-button"
-              onClick={handleCreateSession}
-            >
-              Create Session
-            </button>
-
-            <button
-              type="button"
-              className="my-profile-page__tab-action-button my-profile-page__tab-action-button--primary"
-              onClick={handleCreateProject}
-            >
-              Create Project
-            </button>
-          </div>
-        ) : null}
       </div>
 
       <section className="my-profile-page__body">
@@ -1477,6 +1512,7 @@ function MyProfile() {
           activeTabKey={currentTabKey}
           isOwnProfile={isOwnProfile}
           isSessionCreateFormOpen={isSessionCreateFormOpen}
+          onOpenSessionCreateForm={handleCreateSession}
           createSessionForm={createSessionForm}
           onChangeCreateSessionField={handleChangeCreateSessionField}
           onSubmitCreateSession={handleSubmitCreateSession}
@@ -1504,6 +1540,7 @@ function MyProfile() {
           isLoadingProjectDetail={isLoadingProjectDetail}
           projectDetailError={projectDetailError}
           onCloseProject={handleCloseProject}
+          teacherOptions={teacherOptions}
         />
       </section>
     </div>

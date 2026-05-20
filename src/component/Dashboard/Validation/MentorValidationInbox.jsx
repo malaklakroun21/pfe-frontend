@@ -4,7 +4,7 @@ import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 
 export default function MentorValidationInbox() {
   const [inbox, setInbox] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -13,6 +13,7 @@ export default function MentorValidationInbox() {
   const [validationFeedback, setValidationFeedback] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const loadInbox = async (nextStatusFilter = statusFilter) => {
     setIsLoading(true);
@@ -76,6 +77,7 @@ export default function MentorValidationInbox() {
       });
       setActiveRequestId("");
       setValidationFeedback("");
+      setIsRejecting(false);
       await loadInbox();
     } catch (error) {
       setActionError(error.message || "Unable to accept this request.");
@@ -94,6 +96,7 @@ export default function MentorValidationInbox() {
       });
       setActiveRequestId("");
       setRejectionReason("");
+      setIsRejecting(false);
       await loadInbox();
     } catch (error) {
       setActionError(error.message || "Unable to reject this request.");
@@ -145,10 +148,10 @@ export default function MentorValidationInbox() {
           <ThemedSelect
             value={statusFilter}
             options={[
+              { value: "ALL", label: "All" },
               { value: "PENDING", label: "Pending" },
               { value: "VALIDATED", label: "Validated" },
               { value: "REJECTED", label: "Rejected" },
-              { value: "ALL", label: "All" },
             ]}
             onChange={(nextValue) => {
               setIsLoading(true);
@@ -194,6 +197,29 @@ export default function MentorValidationInbox() {
                   : ""}
               </p>
 
+              {request.portfolioLink ? (
+                <p className="validation-page__mentor-note">
+                  <strong>Portfolio:</strong>{" "}
+                  <a href={request.portfolioLink} target="_blank" rel="noopener noreferrer">
+                    {request.portfolioLink}
+                  </a>
+                </p>
+              ) : null}
+
+              {request.proofStoredName ? (
+                <p className="validation-page__mentor-note">
+                  <strong>Proof file:</strong>{" "}
+                  <a
+                    href={`/uploads/validation-proofs/${request.proofStoredName}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={request.proofFileName}
+                  >
+                    {request.proofFileName}
+                  </a>
+                </p>
+              ) : null}
+
               {request.requestNote ? (
                 <p className="validation-page__mentor-note">
                   <strong>Learner note:</strong> {request.requestNote}
@@ -238,41 +264,74 @@ export default function MentorValidationInbox() {
                         />
                       </label>
 
-                      <label className="validation-page__wizard-field">
-                        <span>Rejection reason (only used if you reject)</span>
-                        <textarea
-                          rows="2"
-                          value={rejectionReason}
-                          onChange={(event) => setRejectionReason(event.target.value)}
-                          placeholder="Optional reason if you reject this request"
-                        />
-                      </label>
+                      {isRejecting ? (
+                        <label className="validation-page__wizard-field">
+                          <span>Rejection reason</span>
+                          <textarea
+                            rows="2"
+                            value={rejectionReason}
+                            onChange={(event) => setRejectionReason(event.target.value)}
+                            placeholder="Optional reason if you reject this request"
+                          />
+                        </label>
+                      ) : null}
 
                       <div className="validation-page__mentor-form-actions">
-                        <button
-                          type="button"
-                          className="validation-page__wizard-secondary"
-                          onClick={() => setActiveRequestId("")}
-                          disabled={isSubmitting}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="validation-page__wizard-secondary"
-                          onClick={() => handleReject(request.requestId)}
-                          disabled={isSubmitting}
-                        >
-                          Reject
-                        </button>
-                        <button
-                          type="button"
-                          className="validation-page__wizard-primary"
-                          onClick={() => handleAccept(request.requestId)}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? "Saving..." : "Accept & validate"}
-                        </button>
+                        {isRejecting ? (
+                          <>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-secondary"
+                              onClick={() => { setIsRejecting(false); setRejectionReason(""); }}
+                              disabled={isSubmitting}
+                            >
+                              Cancel reject
+                            </button>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-secondary"
+                              onClick={() => handleReject(request.requestId)}
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? "Saving..." : "Confirm reject"}
+                            </button>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-primary"
+                              onClick={() => { setIsRejecting(false); setRejectionReason(""); handleAccept(request.requestId); }}
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? "Saving..." : "Accept & validate"}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-secondary"
+                              onClick={() => { setActiveRequestId(""); setRejectionReason(""); }}
+                              disabled={isSubmitting}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-secondary"
+                              onClick={() => setIsRejecting(true)}
+                              disabled={isSubmitting}
+                            >
+                              Reject
+                            </button>
+                            <button
+                              type="button"
+                              className="validation-page__wizard-primary"
+                              onClick={() => handleAccept(request.requestId)}
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? "Saving..." : "Accept & validate"}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -284,6 +343,7 @@ export default function MentorValidationInbox() {
                         setValidationScore("75");
                         setValidationFeedback("");
                         setRejectionReason("");
+                        setIsRejecting(false);
                       }}
                     >
                       Review request

@@ -310,8 +310,32 @@
   box-shadow: 0 14px 24px rgba(213, 82, 25, 0.18);
 }
 
+.settings-page__submit--inline {
+  margin-top: 0;
+}
+
+.settings-page__submit--ghost {
+  margin-top: 0;
+  background: transparent;
+  border: 1px solid rgba(214, 107, 60, 0.3);
+  color: #9a4a18;
+  box-shadow: none;
+}
+
 .settings-page__submit:hover {
   filter: brightness(1.02);
+}
+
+.settings-page__password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-page__password-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .settings-page__toggle-row {
@@ -331,7 +355,8 @@
   min-width: 0;
 }
 
-.settings-page__toggle-copy h3 {
+.settings-page__toggle-copy h3,
+.settings-page__toggle-label {
   margin: 0;
   color: #10213f;
   font-size: 0.95rem;

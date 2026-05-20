@@ -88,7 +88,15 @@ function Header() {
           aria-label="Open my profile"
           onClick={() => navigate("/app/skills")}
         >
-          {buildInitials(user)}
+          {user?.profilePicture ? (
+            <img
+              src={user.profilePicture}
+              alt={buildInitials(user)}
+              className="dashboard-header__avatar-img"
+            />
+          ) : (
+            buildInitials(user)
+          )}
         </button>
       </div>
     </header>

@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { projectApi } from "../../../api/client.js";
 import { refreshNotifications } from "../Notifications/notificationsStore.js";
 import { useAuthSession } from "../../../authSession.js";
@@ -63,6 +63,24 @@ function PeopleIcon() {
       <path d="M15 18a4.3 4.3 0 0 1 4.25-3.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
+}
+
+const STATUS_THEMES = {
+  OPEN:        { from: "#2d9a6b", to: "#4db88a", soft: "#e5f7ee", ink: "#137a48" },
+  IN_PROGRESS: { from: "#c47a00", to: "#e89200", soft: "#fff2d8", ink: "#ad6800" },
+  COMPLETED:   { from: "#2c64c7", to: "#4a80e0", soft: "#e6f0ff", ink: "#2c64c7" },
+  CANCELLED:   { from: "#c94f2e", to: "#e06a4a", soft: "#ffe5df", ink: "#c94f2e" },
+};
+
+function getProjectTheme(status) {
+  return STATUS_THEMES[String(status || "OPEN").toUpperCase()] || STATUS_THEMES.OPEN;
+}
+
+function getProjectInitials(title) {
+  const words = String(title || "PR").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "PR";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 function formatProjectStatus(status = "OPEN") {
@@ -485,6 +503,8 @@ function Projects() {
     }
   }
 
+  const totalProjects = projectsResult.pagination?.total ?? projectsResult.items.length;
+
   return (
     <ViewFrame
       header={
@@ -494,6 +514,7 @@ function Projects() {
       }
     >
       <section className="projects-page">
+        {/* Toolbar */}
         <div className="projects-page__controls">
           <div className="projects-page__content-inner">
             <div className="projects-page__toolbar">
@@ -501,7 +522,6 @@ function Projects() {
                 <span className="projects-page__search-icon">
                   <SearchIcon />
                 </span>
-
                 <input
                   type="search"
                   value={searchTerm}
@@ -510,17 +530,26 @@ function Projects() {
                   aria-label="Search by title, skill, or description"
                 />
               </label>
+
+              <p className="projects-page__summary-text">
+                {totalProjects} project{totalProjects === 1 ? "" : "s"}
+              </p>
+
+              <button
+                type="button"
+                className="projects-page__create-button"
+                onClick={() => navigate("/app/profile?tab=projects&create=1")}
+              >
+                Create Project
+              </button>
             </div>
 
             {isCreatePanelOpen ? (
               <form className="projects-page__create-panel" onSubmit={handleCreateProject}>
-                <div className="projects-page__panel-head">
-                  <div>
-                    <p className="projects-page__eyebrow">New project</p>
-                    <h2>Create a project workspace</h2>
-                  </div>
+                <div>
+                  <p className="projects-page__eyebrow">New project</p>
+                  <h2>Create a project workspace</h2>
                 </div>
-
                 <div className="projects-page__form-grid">
                   <label className="projects-page__field">
                     <span>Title</span>
@@ -528,76 +557,51 @@ function Projects() {
                       type="text"
                       minLength={3}
                       value={createForm.title}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({
-                          ...current,
-                          title: event.target.value,
-                        }))
-                      }
+                      onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))}
                       placeholder="e.g. Build a Fenneky mobile dashboard"
                       required
                     />
                   </label>
-
                   <label className="projects-page__field">
                     <span>Required skill</span>
                     <input
                       type="text"
                       value={createForm.requiredSkill}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({
-                          ...current,
-                          requiredSkill: event.target.value,
-                        }))
-                      }
+                      onChange={(e) => setCreateForm((c) => ({ ...c, requiredSkill: e.target.value }))}
                       placeholder="e.g. React Native"
                     />
                   </label>
-
                   <label className="projects-page__field">
                     <span>Status</span>
                     <ThemedSelect
                       value={createForm.status}
                       options={EDITABLE_PROJECT_STATUS_OPTIONS}
-                      onChange={(nextValue) =>
-                        setCreateForm((current) => ({
-                          ...current,
-                          status: nextValue,
-                        }))
-                      }
+                      onChange={(v) => setCreateForm((c) => ({ ...c, status: v }))}
                     />
                   </label>
-
-                  <label className="projects-page__field projects-page__field--full">
+                  <label className="projects-page__field">
                     <span>Description</span>
                     <textarea
-                      rows="5"
+                      rows="4"
                       value={createForm.description}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({
-                          ...current,
-                          description: event.target.value,
-                        }))
-                      }
-                      placeholder="Describe the project, the goal, and what kind of member help you need."
+                      onChange={(e) => setCreateForm((c) => ({ ...c, description: e.target.value }))}
+                      placeholder="Describe the project and what kind of help you need."
                     />
                   </label>
                 </div>
-
                 <div className="projects-page__panel-actions">
                   <button
                     type="button"
                     className="projects-page__button projects-page__button--ghost"
                     onClick={() => {
                       setCreateForm(EMPTY_PROJECT_FORM);
-                      const nextSearchParams = new URLSearchParams(searchParams);
-                      nextSearchParams.delete("create");
-                      setSearchParams(nextSearchParams, { replace: true });
+                      const p = new URLSearchParams(searchParams);
+                      p.delete("create");
+                      setSearchParams(p, { replace: true });
                     }}
                   >
                     Cancel
                   </button>
-
                   <button
                     type="submit"
                     className="projects-page__button projects-page__button--primary"
@@ -611,398 +615,265 @@ function Projects() {
           </div>
         </div>
 
+        {/* Content */}
         <div className="projects-page__content">
-          <div className="projects-page__list-column">
-            {projectsErrorMessage ? <p>{projectsErrorMessage}</p> : null}
+          <div className="projects-page__content-inner">
+            {projectsErrorMessage ? <p style={{ color: "#c94f2e" }}>{projectsErrorMessage}</p> : null}
             {statusMessage ? <p className="projects-page__status-message">{statusMessage}</p> : null}
-
-            <div className="projects-page__section-head">
-              <div>
-                <p className="projects-page__eyebrow">Workspace list</p>
-                <h2>Browse project opportunities</h2>
-              </div>
-
-              <span className="projects-page__count">
-                {projectsResult.pagination?.total ?? projectsResult.items.length} project
-                {(projectsResult.pagination?.total ?? projectsResult.items.length) === 1 ? "" : "s"}
-              </span>
-            </div>
 
             {isLoadingProjects ? (
               <div className="projects-page__empty">Loading projects...</div>
-            ) : projectsResult.items.length > 0 ? (
-              <div className="projects-page__grid">
-                {projectsResult.items.map((project) => {
-                  const memberCount = getProjectMembers(project).length;
-                  const isOwner = project.ownerId === user?.userId;
-                  const isMember = isProjectMember(project, user?.userId);
-                  const canJoin = canJoinProject(project, user?.userId);
-                  const isActive = project.projectId === projectId;
-
-                  return (
-                    <article
-                      key={project.projectId}
-                      className={`projects-page__card ${isActive ? "is-active" : ""}`}
-                    >
-                      <div className="projects-page__card-topline">
-                        <span className={`projects-page__badge projects-page__badge--${String(project.status).toLowerCase()}`}>
-                          {formatProjectStatus(project.status)}
-                        </span>
-
-                        {isOwner ? (
-                          <span className="projects-page__owner-pill">Owner</span>
-                        ) : null}
-                      </div>
-
-                      <div className="projects-page__card-icon">
-                        <FolderIcon />
-                      </div>
-
-                      <div className="projects-page__card-copy">
-                        <h3>{project.title}</h3>
-                        <p>{project.description || "No description yet."}</p>
-                      </div>
-
-                      <div className="projects-page__meta-list">
-                        <span>Skill: {project.requiredSkill || "Not specified"}</span>
-                        <span>Owner: {isOwner ? "You" : project.ownerId}</span>
-                        <span>Created: {formatDateTimeLabel(project.createdAt)}</span>
-                        <span>Members: {memberCount}</span>
-                      </div>
-
-                      <div className="projects-page__card-actions">
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--soft"
-                          onClick={() => navigate(`/app/projects/${encodeURIComponent(project.projectId)}`)}
+            ) : !projectId ? (
+              /* List view — category-style cards */
+              <section className="projects-page__section">
+                {projectsResult.items.length > 0 ? (
+                  <div className="projects-page__category-grid">
+                    {projectsResult.items.map((project) => {
+                      const theme = getProjectTheme(project.status);
+                      const memberCount = getProjectMembers(project).length;
+                      return (
+                        <Link
+                          key={project.projectId}
+                          to={`/app/projects/${encodeURIComponent(project.projectId)}`}
+                          className="projects-page__category-card"
+                          style={{
+                            "--projects-from": theme.from,
+                            "--projects-to": theme.to,
+                            "--projects-soft": theme.soft,
+                            "--projects-ink": theme.ink,
+                          }}
                         >
-                          {isOwner ? "Manage" : "Open"}
-                        </button>
-
-                        {isOwner ? null : isMember ? (
-                          <button
-                            type="button"
-                            className="projects-page__button projects-page__button--ghost"
-                            disabled={isTogglingMembership === project.projectId}
-                            onClick={() => handleToggleMembership(project)}
-                          >
-                            {isTogglingMembership === project.projectId ? "Leaving..." : "Leave"}
-                          </button>
-                        ) : hasPendingJoinRequest(project, user?.userId) ? (
-                          <button
-                            type="button"
-                            className="projects-page__button projects-page__button--ghost"
-                            disabled
-                          >
-                            Pending request
-                          </button>
-                        ) : canJoin ? (
-                          <button
-                            type="button"
-                            className="projects-page__button projects-page__button--primary"
-                            disabled={isTogglingMembership === project.projectId}
-                            onClick={() => handleToggleMembership(project)}
-                          >
-                            {isTogglingMembership === project.projectId ? "Requesting..." : "Join"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                          <span className="projects-page__category-badge">
+                            {getProjectInitials(project.title)}
+                          </span>
+                          <strong>{project.title}</strong>
+                          <span className="projects-page__category-stat">
+                            {memberCount} member{memberCount !== 1 ? "s" : ""}
+                          </span>
+                          <span className="projects-page__category-meta">
+                            {formatProjectStatus(project.status)}
+                          </span>
+                          <span className="projects-page__category-date">
+                            Skill: {project.requiredSkill || "Not specified"}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="projects-page__empty">No projects match this search yet.</div>
+                )}
+              </section>
             ) : (
-              <div className="projects-page__empty">No projects match this search yet.</div>
-            )}
-          </div>
+              /* Detail view */
+              <section className="projects-page__section projects-page__section--detail">
+                <div className="projects-page__section-header projects-page__section-header--split">
+                  <div>
+                    <p className="projects-page__eyebrow">Project</p>
+                    <h2>{selectedProject?.title || "Loading..."}</h2>
+                    {selectedProject ? (
+                      <p className="projects-page__section-copy">
+                        {selectedProject.description || "No description yet."}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
 
-          <aside className="projects-page__detail-column">
-            {projectId ? (
-              isLoadingDetail ? (
-                <div className="projects-page__detail-card projects-page__empty">
-                  Loading project details...
-                </div>
-              ) : detailErrorMessage ? (
-                <div className="projects-page__detail-card">
-                  <h2>Unable to load this project</h2>
-                  <p>{detailErrorMessage}</p>
-                  <button
-                    type="button"
-                    className="projects-page__button projects-page__button--soft"
-                    onClick={() => navigate("/app/projects")}
-                  >
-                    Back to projects
-                  </button>
-                </div>
-              ) : selectedProject ? (
-                <div className="projects-page__detail-card">
-                  <div className="projects-page__detail-head">
-                    <div>
-                      <p className="projects-page__eyebrow">Project detail</p>
-                      <h2>{selectedProject.title}</h2>
+                <Link className="projects-page__back-link" to="/app/projects">
+                  ← Return to projects
+                </Link>
+
+                {isLoadingDetail ? (
+                  <div className="projects-page__empty">Loading project details...</div>
+                ) : detailErrorMessage ? (
+                  <div className="projects-page__empty">{detailErrorMessage}</div>
+                ) : selectedProject ? (
+                  <>
+                    <div className="projects-page__detail-meta">
+                      <span className={`projects-page__badge projects-page__badge--${String(selectedProject.status).toLowerCase()}`}>
+                        {formatProjectStatus(selectedProject.status)}
+                      </span>
+                      <span>Skill: {selectedProject.requiredSkill || "Not specified"}</span>
+                      <span>Members: {selectedProjectMembers.length}</span>
+                      <span>Created: {formatDateTimeLabel(selectedProject.createdAt)}</span>
                     </div>
 
-                    <button
-                      type="button"
-                      className="projects-page__button projects-page__button--soft"
-                      onClick={() => navigate("/app/projects")}
-                    >
-                      Close
-                    </button>
-                  </div>
+                    {/* Guest action */}
+                    {!isSelectedProjectOwner ? (
+                      <div>
+                        {isSelectedProjectMember ? (
+                          <button
+                            type="button"
+                            className="projects-page__join-button projects-page__join-button--ghost"
+                            disabled={isTogglingMembership === selectedProject.projectId}
+                            onClick={() => handleToggleMembership(selectedProject)}
+                          >
+                            {isTogglingMembership === selectedProject.projectId ? "Leaving..." : "Leave project"}
+                          </button>
+                        ) : isSelectedProjectJoinPending ? (
+                          <button type="button" className="projects-page__join-button" disabled>
+                            Request pending
+                          </button>
+                        ) : canJoinProject(selectedProject, user?.userId) ? (
+                          <button
+                            type="button"
+                            className="projects-page__join-button"
+                            disabled={isTogglingMembership === selectedProject.projectId}
+                            onClick={() => handleToggleMembership(selectedProject)}
+                          >
+                            {isTogglingMembership === selectedProject.projectId ? "Requesting..." : "Join project"}
+                          </button>
+                        ) : (
+                          <p style={{ color: "#7a3412", fontSize: "0.95rem" }}>
+                            This project is not open for new joins right now.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
 
-                  <div className="projects-page__detail-meta">
-                    <span className={`projects-page__badge projects-page__badge--${String(selectedProject.status).toLowerCase()}`}>
-                      {formatProjectStatus(selectedProject.status)}
-                    </span>
-                    <span>Project ID: {selectedProject.projectId}</span>
-                    <span>Owner: {isSelectedProjectOwner ? "You" : selectedProject.ownerId}</span>
-                    <span>Created: {formatDateTimeLabel(selectedProject.createdAt)}</span>
-                    <span>Updated: {formatDateTimeLabel(selectedProject.updatedAt)}</span>
-                  </div>
-
-                  {isSelectedProjectOwner ? (
-                    <div className="projects-page__detail-note">
-                      Join requests are pending approval. Review the list below and accept or reject requests manually.
-                    </div>
-                  ) : null}
-
-                  {isSelectedProjectOwner ? (
-                    <>
-                      <div className="projects-page__panel-head">
-                        <div>
+                    {/* Owner catalog cards */}
+                    {isSelectedProjectOwner ? (
+                      <div className="projects-page__catalog-grid">
+                        {/* Edit card */}
+                        <article className="projects-page__catalog-card">
                           <p className="projects-page__eyebrow">Owner tools</p>
                           <h3>Edit project</h3>
-                        </div>
-                      </div>
-
-                      <div className="projects-page__form-grid">
-                        <label className="projects-page__field">
-                          <span>Title</span>
-                          <input
-                            type="text"
-                            value={editForm.title}
-                            onChange={(event) =>
-                              setEditForm((current) => ({
-                                ...current,
-                                title: event.target.value,
-                              }))
-                            }
-                          />
-                        </label>
-
-                        <label className="projects-page__field">
-                          <span>Required skill</span>
-                          <input
-                            type="text"
-                            value={editForm.requiredSkill}
-                            onChange={(event) =>
-                              setEditForm((current) => ({
-                                ...current,
-                                requiredSkill: event.target.value,
-                              }))
-                            }
-                          />
-                        </label>
-
-                        <label className="projects-page__field">
-                          <span>Status</span>
-                          <ThemedSelect
-                            value={editForm.status}
-                            options={EDITABLE_PROJECT_STATUS_OPTIONS}
-                            onChange={(nextValue) =>
-                              setEditForm((current) => ({
-                                ...current,
-                                status: nextValue,
-                              }))
-                            }
-                          />
-                        </label>
-
-                        <label className="projects-page__field projects-page__field--full">
-                          <span>Description</span>
-                          <textarea
-                            rows="5"
-                            value={editForm.description}
-                            onChange={(event) =>
-                              setEditForm((current) => ({
-                                ...current,
-                                description: event.target.value,
-                              }))
-                            }
-                          />
-                        </label>
-                      </div>
-
-                      <div className="projects-page__panel-actions">
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--ghost"
-                          onClick={handleDeleteProject}
-                          disabled={isDeletingProject}
-                        >
-                          {isDeletingProject ? "Deleting..." : "Delete project"}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--primary"
-                          onClick={handleSaveProject}
-                          disabled={isSavingProject}
-                        >
-                          {isSavingProject ? "Saving..." : "Save changes"}
-                        </button>
-                      </div>
-
-                      <div className="projects-page__members-block">
-                        <div className="projects-page__panel-head">
-                          <div>
-                            <p className="projects-page__eyebrow">Join requests</p>
-                            <h3>Pending approvals</h3>
+                          <div className="projects-page__form-grid">
+                            <label className="projects-page__field">
+                              <span>Title</span>
+                              <input
+                                type="text"
+                                value={editForm.title}
+                                onChange={(e) => setEditForm((c) => ({ ...c, title: e.target.value }))}
+                              />
+                            </label>
+                            <label className="projects-page__field">
+                              <span>Required skill</span>
+                              <input
+                                type="text"
+                                value={editForm.requiredSkill}
+                                onChange={(e) => setEditForm((c) => ({ ...c, requiredSkill: e.target.value }))}
+                              />
+                            </label>
+                            <label className="projects-page__field">
+                              <span>Status</span>
+                              <ThemedSelect
+                                value={editForm.status}
+                                options={EDITABLE_PROJECT_STATUS_OPTIONS}
+                                onChange={(v) => setEditForm((c) => ({ ...c, status: v }))}
+                              />
+                            </label>
+                            <label className="projects-page__field">
+                              <span>Description</span>
+                              <textarea
+                                rows="4"
+                                value={editForm.description}
+                                onChange={(e) => setEditForm((c) => ({ ...c, description: e.target.value }))}
+                              />
+                            </label>
                           </div>
-                        </div>
+                          <div className="projects-page__panel-actions">
+                            <button
+                              type="button"
+                              className="projects-page__button projects-page__button--danger"
+                              onClick={handleDeleteProject}
+                              disabled={isDeletingProject}
+                            >
+                              {isDeletingProject ? "Deleting..." : "Delete"}
+                            </button>
+                            <button
+                              type="button"
+                              className="projects-page__button projects-page__button--primary"
+                              onClick={handleSaveProject}
+                              disabled={isSavingProject}
+                            >
+                              {isSavingProject ? "Saving..." : "Save changes"}
+                            </button>
+                          </div>
+                        </article>
 
-                        {selectedProjectJoinRequests.length > 0 ? (
-                          <div className="projects-page__member-list">
-                            {selectedProjectJoinRequests.map((request) => (
-                              <article key={request.userId} className="projects-page__member-card">
-                                <div className="projects-page__member-main">
-                                  <span className="projects-page__member-avatar">
-                                    <PeopleIcon />
-                                  </span>
-
-                                  <div>
-                                    <strong>{request.userId}</strong>
-                                    <span>Requested {formatDateTimeLabel(request.requestedAt)}</span>
+                        {/* Join requests card */}
+                        <article className="projects-page__catalog-card">
+                          <p className="projects-page__eyebrow">Join requests</p>
+                          <h3>Pending approvals</h3>
+                          {selectedProjectJoinRequests.length > 0 ? (
+                            <div className="projects-page__member-list">
+                              {selectedProjectJoinRequests.map((request) => (
+                                <div key={request.userId} className="projects-page__member-card">
+                                  <div className="projects-page__member-main">
+                                    <span className="projects-page__member-avatar"><PeopleIcon /></span>
+                                    <div>
+                                      <strong>{request.userId}</strong>
+                                      <span>Requested {formatDateTimeLabel(request.requestedAt)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="projects-page__member-actions">
+                                    <button
+                                      type="button"
+                                      className="projects-page__button projects-page__button--ghost"
+                                      disabled={processingRequestUserId === request.userId}
+                                      onClick={() => handleRejectRequest(request.userId)}
+                                    >
+                                      {processingRequestUserId === request.userId ? "..." : "Reject"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="projects-page__button projects-page__button--primary"
+                                      disabled={processingRequestUserId === request.userId}
+                                      onClick={() => handleApproveRequest(request.userId)}
+                                    >
+                                      {processingRequestUserId === request.userId ? "..." : "Approve"}
+                                    </button>
                                   </div>
                                 </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="projects-page__empty" style={{ minHeight: 80 }}>
+                              No pending requests.
+                            </div>
+                          )}
+                        </article>
 
-                                <div className="projects-page__member-actions">
+                        {/* Members card */}
+                        <article className="projects-page__catalog-card">
+                          <p className="projects-page__eyebrow">Members</p>
+                          <h3>Project members</h3>
+                          {selectedProjectMembers.length > 0 ? (
+                            <div className="projects-page__member-list">
+                              {selectedProjectMembers.map((member) => (
+                                <div key={member.userId} className="projects-page__member-card">
+                                  <div className="projects-page__member-main">
+                                    <span className="projects-page__member-avatar"><PeopleIcon /></span>
+                                    <div>
+                                      <strong>{member.userId}</strong>
+                                      <span>Joined {formatDateTimeLabel(member.joinedAt)}</span>
+                                    </div>
+                                  </div>
                                   <button
                                     type="button"
                                     className="projects-page__button projects-page__button--ghost"
-                                    disabled={processingRequestUserId === request.userId}
-                                    onClick={() => handleRejectRequest(request.userId)}
+                                    disabled={removingMemberUserId === member.userId}
+                                    onClick={() => handleRemoveMember(member.userId)}
                                   >
-                                    {processingRequestUserId === request.userId ? "Rejecting..." : "Reject"}
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    className="projects-page__button projects-page__button--primary"
-                                    disabled={processingRequestUserId === request.userId}
-                                    onClick={() => handleApproveRequest(request.userId)}
-                                  >
-                                    {processingRequestUserId === request.userId ? "Approving..." : "Approve"}
+                                    {removingMemberUserId === member.userId ? "Removing..." : "Remove"}
                                   </button>
                                 </div>
-                              </article>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="projects-page__empty">
-                            No pending join requests at the moment.
-                          </div>
-                        )}
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="projects-page__empty" style={{ minHeight: 80 }}>
+                              No members yet.
+                            </div>
+                          )}
+                        </article>
                       </div>
-
-                      <div className="projects-page__members-block">
-                        <div className="projects-page__panel-head">
-                          <div>
-                            <p className="projects-page__eyebrow">Members</p>
-                            <h3>Manage project members</h3>
-                          </div>
-                        </div>
-
-                        {selectedProjectMembers.length > 0 ? (
-                          <div className="projects-page__member-list">
-                            {selectedProjectMembers.map((member) => (
-                              <article key={member.userId} className="projects-page__member-card">
-                                <div className="projects-page__member-main">
-                                  <span className="projects-page__member-avatar">
-                                    <PeopleIcon />
-                                  </span>
-
-                                  <div>
-                                    <strong>{member.userId}</strong>
-                                    <span>Joined {formatDateTimeLabel(member.joinedAt)}</span>
-                                  </div>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  className="projects-page__button projects-page__button--ghost"
-                                  disabled={removingMemberUserId === member.userId}
-                                  onClick={() => handleRemoveMember(member.userId)}
-                                >
-                                  {removingMemberUserId === member.userId ? "Removing..." : "Delete member"}
-                                </button>
-                              </article>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="projects-page__empty">
-                            No members have joined this project yet.
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="projects-page__guest-actions">
-                      <p>{selectedProject.description || "No description yet."}</p>
-
-                      <div className="projects-page__meta-list">
-                        <span>Required skill: {selectedProject.requiredSkill || "Not specified"}</span>
-                        <span>Members: {selectedProjectMembers.length}</span>
-                      </div>
-
-                      {isSelectedProjectMember ? (
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--ghost"
-                          disabled={isTogglingMembership === selectedProject.projectId}
-                          onClick={() => handleToggleMembership(selectedProject)}
-                        >
-                          {isTogglingMembership === selectedProject.projectId ? "Leaving..." : "Leave project"}
-                        </button>
-                      ) : isSelectedProjectJoinPending ? (
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--ghost"
-                          disabled
-                        >
-                          Request pending
-                        </button>
-                      ) : canJoinProject(selectedProject, user?.userId) ? (
-                        <button
-                          type="button"
-                          className="projects-page__button projects-page__button--primary"
-                          disabled={isTogglingMembership === selectedProject.projectId}
-                          onClick={() => handleToggleMembership(selectedProject)}
-                        >
-                          {isTogglingMembership === selectedProject.projectId ? "Requesting..." : "Join project"}
-                        </button>
-                      ) : (
-                        <div className="projects-page__empty">
-                          This project is not open for new joins right now.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : null
-            ) : (
-              <div className="projects-page__detail-card projects-page__detail-card--empty">
-                <div className="projects-page__empty-illustration">
-                  <FolderIcon />
-                </div>
-                <h2>Select a project</h2>
-                <p>
-                  Open one project from the list to view details, join it, or manage members if you are the owner.
-                </p>
-              </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
             )}
-          </aside>
+          </div>
         </div>
       </section>
     </ViewFrame>

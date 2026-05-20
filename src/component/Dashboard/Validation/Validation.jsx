@@ -38,6 +38,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const [selectedMentorId, setSelectedMentorId] = useState("");
   const [customSkillName, setCustomSkillName] = useState("");
   const [portfolioLink, setPortfolioLink] = useState("");
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [validatorNote, setValidatorNote] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +78,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
   const canContinueByStep = {
     "select-skill": Boolean(selectedSkill),
     "choose-mentor": Boolean(selectedMentorId),
-    evidence: hasExistingEvidence || hasPortfolioLink,
+    evidence: hasExistingEvidence || hasPortfolioLink || Boolean(uploadedFile),
     submit: Boolean(selectedSkill && selectedMentor),
   };
 
@@ -106,6 +107,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           selectedMentor,
           portfolioLink,
           validatorNote,
+          uploadedFile,
         });
 
         setIsSubmitted(true);
@@ -140,10 +142,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
           <div className="validation-page__wizard-body">
             <div className="validation-page__wizard-copy">
               <h4>Select or type the skill you want to validate</h4>
-              <p>
-                Choose an existing skill from the app, or type a new one manually. If the skill
-                already exists on your backend profile, the request will reuse it automatically.
-              </p>
             </div>
 
             {skillOptions.length > 0 ? (
@@ -156,7 +154,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
                     ...skillOptions.map((skill) => ({
                       value: skill.id,
                       label: skill.label,
-                      description: skill.description,
                     })),
                   ]}
                   onChange={(nextValue) => {
@@ -167,32 +164,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
               </label>
             ) : null}
 
-            <label className="validation-page__wizard-field">
-              <span>{skillOptions.length > 0 ? "Or type a new skill" : "Skill name"}</span>
-              <input
-                type="text"
-                placeholder="e.g. Node.js API Development"
-                value={customSkillName}
-                onChange={(event) => {
-                  setCustomSkillName(event.target.value);
-                  if (selectedSkillId) {
-                    setSelectedSkillId("");
-                  }
-                }}
-              />
-            </label>
-
-            {skillOptions.length > 0 ? (
-              <p className="validation-page__wizard-helper">
-                {skillOptions.length} skills available in the app. You can choose one from the
-                list or write your own.
-              </p>
-            ) : (
-              <div className="validation-page__wizard-empty-state">
-                <strong>No skill is available in the app yet.</strong>
-                <p>Your typed skill will be sent manually for validation.</p>
-              </div>
-            )}
 
             {selectedSkill ? (
               <div
@@ -203,11 +174,9 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
                 }`}
               >
                 <strong>{selectedSkill.label}</strong>
-                <p>
-                  {hasExistingSkillMatch
-                    ? selectedSkill.description
-                    : "This skill is not in the current app list yet. It will be created on your profile and sent manually for validation."}
-                </p>
+                {!hasExistingSkillMatch && (
+                  <p>This skill is not in the current app list yet. It will be created on your profile and sent manually for validation.</p>
+                )}
               </div>
             ) : null}
           </div>
@@ -264,26 +233,6 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
             <div className="validation-page__upload-section">
               <strong className="validation-page__upload-title">Add proof of work</strong>
 
-              <div
-                className={`validation-page__evidence-status ${
-                  hasExistingEvidence
-                    ? "validation-page__evidence-status--ready"
-                    : "validation-page__evidence-status--missing"
-                }`}
-              >
-                <strong>
-                  {hasExistingEvidence
-                    ? `${selectedSkillEvidenceCount} saved evidence item${
-                        selectedSkillEvidenceCount === 1 ? "" : "s"
-                      } already linked`
-                    : "No saved evidence linked to this skill yet"}
-                </strong>
-                <p>
-                  {hasExistingEvidence
-                    ? "This skill already has backend evidence. You can continue now or add one more portfolio link below."
-                    : "Add at least one portfolio link below so the validator can review concrete work before you submit."}
-                </p>
-              </div>
             </div>
 
             <div className="validation-page__portfolio-section">
@@ -300,18 +249,23 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
               <p className="validation-page__evidence-note">
                 Only saved links are sent with the request for now.
               </p>
+
+              <div className="validation-page__wizard-field">
+                <span>Upload a file (optional)</span>
+                <label className="validation-page__file-upload">
+                  <span className="validation-page__file-text">
+                    {uploadedFile ? uploadedFile.name : "No file chosen"}
+                  </span>
+                  <span className="validation-page__file-btn">Choose file</span>
+                  <input
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={(event) => setUploadedFile(event.target.files[0] || null)}
+                  />
+                </label>
+              </div>
             </div>
 
-            {requestFlow?.evidenceTips?.length ? (
-              <div className="validation-page__wizard-tips">
-                <strong>Tips</strong>
-                <ul>
-                  {requestFlow.evidenceTips.map((tip) => (
-                    <li key={tip}>{tip}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         );
       case "submit":
@@ -581,7 +535,6 @@ function Validation() {
         </div>
       </article>
 
-      <LearnerSkillStatuses skills={pageData.skills} />
 
       <RequestValidationWizard
         requestFlow={pageData.requestFlow}
@@ -590,19 +543,20 @@ function Validation() {
           selectedMentor,
           portfolioLink,
           validatorNote,
+          uploadedFile,
         }) => {
-          const payload = {
-            skillName: selectedSkill?.label || "",
-            mentorUserId: selectedMentor?.id || "",
-            portfolioLink,
-            note: validatorNote,
-          };
-
+          const formData = new FormData();
+          formData.append("skillName", selectedSkill?.label || "");
+          formData.append("mentorUserId", selectedMentor?.id || "");
+          formData.append("portfolioLink", portfolioLink || "");
+          formData.append("note", validatorNote || "");
           if (selectedSkill?.skillId) {
-            payload.skillId = selectedSkill.skillId;
+            formData.append("skillId", selectedSkill.skillId);
           }
-
-          await dashboardApi.createValidationRequest(payload);
+          if (uploadedFile) {
+            formData.append("proofFile", uploadedFile);
+          }
+          await dashboardApi.createValidationRequest(formData);
         }}
       />
     </section>

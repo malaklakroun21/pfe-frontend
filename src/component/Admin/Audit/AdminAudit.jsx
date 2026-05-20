@@ -75,11 +75,11 @@ function AdminAudit() {
             </div>
 
             <div className="admin-field">
-              <label htmlFor="admin-audit-admin">Admin userId</label>
+              <label htmlFor="admin-audit-admin">Admin</label>
               <input
                 id="admin-audit-admin"
                 className="admin-input"
-                placeholder="ADMIN-USER-ID"
+                placeholder="Nom et prénom"
                 value={adminUserId}
                 onChange={(e) => {
                   setPage(1);
@@ -89,11 +89,11 @@ function AdminAudit() {
             </div>
 
             <div className="admin-field">
-              <label htmlFor="admin-audit-user">User userId</label>
+              <label htmlFor="admin-audit-user">Utilisateur</label>
               <input
                 id="admin-audit-user"
                 className="admin-input"
-                placeholder="USER-ID"
+                placeholder="Nom et prénom"
                 value={userId}
                 onChange={(e) => {
                   setPage(1);

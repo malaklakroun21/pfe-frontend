@@ -135,6 +135,12 @@ export const userApi = {
       body: payload,
     });
   },
+  changePassword(payload) {
+    return apiRequest("/users/me/password", {
+      method: "PUT",
+      body: payload,
+    });
+  },
 };
 
 export const dashboardApi = {
@@ -184,11 +190,18 @@ export const validationApi = {
 };
 
 export const sessionApi = {
-  list() {
-    return apiRequest("/sessions");
+  list(params = {}) {
+    const query = new URLSearchParams();
+    if (params.role) query.set("role", params.role);
+    if (params.status) query.set("status", params.status);
+    const qs = query.toString();
+    return apiRequest(`/sessions${qs ? `?${qs}` : ""}`);
   },
   listDirectory() {
     return apiRequest("/sessions/explore");
+  },
+  getTeacherDirectory() {
+    return apiRequest("/sessions/teachers");
   },
   request(payload) {
     return apiRequest("/sessions/request", {

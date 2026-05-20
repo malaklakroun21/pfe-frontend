@@ -132,11 +132,11 @@ function AdminReports() {
             </div>
 
             <div className="admin-field">
-              <label htmlFor="admin-reports-assigned">Assigned to (admin userId)</label>
+              <label htmlFor="admin-reports-assigned">Assigné à</label>
               <input
                 id="admin-reports-assigned"
                 className="admin-input"
-                placeholder="ADMIN-USER-ID"
+                placeholder="Nom et prénom"
                 value={assignedTo}
                 onChange={(event) => {
                   setPage(1);

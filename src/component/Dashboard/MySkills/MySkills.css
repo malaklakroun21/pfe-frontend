@@ -51,6 +51,13 @@
   letter-spacing: -0.04em;
 }
 
+.my-profile-page__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .my-profile-page__details {
   min-width: 0;
 }
@@ -369,6 +376,34 @@
   flex-wrap: wrap;
 }
 
+.my-profile-page__skill-status-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.my-profile-page__skill-status-pill--validated {
+  background: #e0f5ee;
+  color: #1a7a56;
+}
+
+.my-profile-page__skill-status-pill--rejected {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+.my-profile-page__skill-status-pill--in_review {
+  background: #fff3e0;
+  color: #b06a00;
+}
+
+.my-profile-page__skill-status-pill--pending {
+  background: #f1f1f1;
+  color: #6b7280;
+}
+
 .my-profile-page__skill-title-row h3 {
   margin: 0;
   color: #0f172a;
@@ -616,6 +651,58 @@
 .my-profile-page__session-field textarea:focus {
   outline: 2px solid rgba(223, 90, 28, 0.18);
   border-color: #df5a1c;
+}
+
+.my-profile-page__teacher-search {
+  position: relative;
+}
+
+.my-profile-page__teacher-search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid rgba(236, 207, 188, 0.95);
+  border-radius: 16px;
+  background: #fffdfb;
+  color: #0f172a;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.my-profile-page__teacher-search input:focus {
+  outline: 2px solid rgba(223, 90, 28, 0.18);
+  border-color: #df5a1c;
+}
+
+.my-profile-page__teacher-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(236, 207, 188, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(180, 120, 80, 0.12);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.my-profile-page__teacher-suggestions li {
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.93rem;
+  color: #0f172a;
+}
+
+.my-profile-page__teacher-suggestions li:hover {
+  background: #fff3ec;
+  color: #d75b1b;
 }
 
 .my-profile-page__project-form-actions,
