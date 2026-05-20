@@ -330,6 +330,15 @@ export const badgeApi = {
   },
 };
 
+export const streakApi = {
+  getMe() {
+    return apiRequest("/streaks/me");
+  },
+  getByUserId(userId) {
+    return apiRequest(`/streaks/${encodeURIComponent(userId)}`);
+  },
+};
+
 export const notificationApi = {
   list() {
     return apiRequest("/notifications");
