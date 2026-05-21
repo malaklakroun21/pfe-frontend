@@ -49,6 +49,17 @@ function SidebarIcon({ name }) {
           <path d="M4.75 7.25v-.5a2 2 0 0 1 2-2h2.9l1.5 1.8" />
         </svg>
       );
+    case "leaderboards":
+      return (
+        <svg className="dashboard-sidebar__icon" {...iconProps}>
+          <path d="M7.5 20.25h9" />
+          <path d="M9.75 20.25v-3.5h4.5v3.5" />
+          <path d="M8.25 4.75h7.5v4.1a3.75 3.75 0 0 1-7.5 0Z" />
+          <path d="M8.25 6.25H4.75v1.3a3 3 0 0 0 3 3h.75" />
+          <path d="M15.75 6.25h3.5v1.3a3 3 0 0 1-3 3h-.75" />
+          <path d="M12 12.6v4.15" />
+        </svg>
+      );
     case "messages":
       return (
         <svg className="dashboard-sidebar__icon" {...iconProps}>

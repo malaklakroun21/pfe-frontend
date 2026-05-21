@@ -319,6 +319,23 @@ export const xpApi = {
   },
 };
 
+export const leaderboardApi = {
+  getWeeklyXp(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    if (params.page) {
+      searchParams.set("page", String(params.page));
+    }
+
+    if (params.limit) {
+      searchParams.set("limit", String(params.limit));
+    }
+
+    const query = searchParams.toString();
+    return apiRequest(`/leaderboards/weekly-xp${query ? `?${query}` : ""}`);
+  },
+};
+
 export const badgeApi = {
   getByUserId(userId, options = {}) {
     const params = new URLSearchParams();
