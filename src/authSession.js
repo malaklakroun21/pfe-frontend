@@ -54,7 +54,8 @@ function persistSnapshot() {
   }
 
   if (sessionSnapshot.user) {
-    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sessionSnapshot.user));
+    const { profilePicture: _photo, ...userWithoutPhoto } = sessionSnapshot.user;
+    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPhoto));
   } else {
     window.localStorage.removeItem(USER_STORAGE_KEY);
   }

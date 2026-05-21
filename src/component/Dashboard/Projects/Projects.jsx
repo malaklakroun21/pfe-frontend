@@ -1,5 +1,5 @@
-import { useDeferredValue, useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { projectApi } from "../../../api/client.js";
 import { refreshNotifications } from "../Notifications/notificationsStore.js";
 import { useAuthSession } from "../../../authSession.js";
@@ -22,6 +22,7 @@ const EDITABLE_PROJECT_STATUS_OPTIONS = PROJECT_STATUS_OPTIONS.filter(
 const EMPTY_PROJECT_FORM = {
   title: "",
   requiredSkill: "",
+  categoryId: "",
   status: "OPEN",
   description: "",
 };
@@ -72,6 +73,26 @@ const STATUS_THEMES = {
   CANCELLED:   { from: "#c94f2e", to: "#e06a4a", soft: "#ffe5df", ink: "#c94f2e" },
 };
 
+const CATEGORY_THEMES = [
+  { from: "#2d9a6b", to: "#4db88a", soft: "#e5f7ee", ink: "#137a48" },
+  { from: "#c47a00", to: "#e89200", soft: "#fff2d8", ink: "#ad6800" },
+  { from: "#2c64c7", to: "#4a80e0", soft: "#e6f0ff", ink: "#2c64c7" },
+  { from: "#7c3aed", to: "#9461f0", soft: "#f0ebff", ink: "#6028cc" },
+  { from: "#db651f", to: "#e8842f", soft: "#fff0e3", ink: "#b84d14" },
+  { from: "#0f7a80", to: "#1a9ba3", soft: "#e0f7f8", ink: "#0d626a" },
+];
+
+function getCategoryTheme(index) {
+  return CATEGORY_THEMES[index % CATEGORY_THEMES.length];
+}
+
+function getCategoryCode(name) {
+  const words = String(name || "GEN").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "GEN";
+  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
+  return words.map((w) => w[0]).join("").slice(0, 3).toUpperCase();
+}
+
 function getProjectTheme(status) {
   return STATUS_THEMES[String(status || "OPEN").toUpperCase()] || STATUS_THEMES.OPEN;
 }
@@ -117,6 +138,7 @@ function buildProjectForm(project) {
   return {
     title: project?.title || "",
     requiredSkill: project?.requiredSkill || "",
+    categoryId: project?.categoryId || "",
     status: project?.status || "OPEN",
     description: project?.description || "",
   };
@@ -152,12 +174,15 @@ function canJoinProject(project, userId) {
 
 function Projects() {
   const navigate = useNavigate();
-  const { projectId = "" } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { projectId: param = "" } = useParams();
+  const isProjectDetail = param.startsWith("PRJ-") || param.startsWith("prj-");
+  const projectId = isProjectDetail ? param : "";
+  const categoryId = isProjectDetail ? "" : param;
   const { user } = useAuthSession();
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const statusFilter = "ALL";
+  const [apiCategories, setApiCategories] = useState([]);
   const [projectsResult, setProjectsResult] = useState({ items: [], pagination: null });
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [projectsErrorMessage, setProjectsErrorMessage] = useState("");
@@ -173,7 +198,38 @@ function Projects() {
   const [isTogglingMembership, setIsTogglingMembership] = useState("");
   const [removingMemberUserId, setRemovingMemberUserId] = useState("");
   const [processingRequestUserId, setProcessingRequestUserId] = useState("");
-  const isCreatePanelOpen = searchParams.get("create") === "1" && !projectId;
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+
+  const categoryCards = useMemo(() => {
+    return apiCategories.map((cat) => {
+      const projectsInCategory = projectsResult.items.filter(
+        (p) => p.categoryId === cat.categoryId,
+      );
+      const totalMembers = projectsInCategory.reduce(
+        (sum, p) => sum + (Array.isArray(p.members) ? p.members.length : 0),
+        0,
+      );
+      return { ...cat, totalProjects: projectsInCategory.length, totalMembers };
+    });
+  }, [apiCategories, projectsResult.items]);
+
+  const selectedCategory = useMemo(
+    () => categoryCards.find((cat) => cat.categoryId === categoryId) || null,
+    [categoryCards, categoryId],
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (!categoryId) return [];
+    return projectsResult.items.filter((p) => p.categoryId === categoryId);
+  }, [projectsResult.items, categoryId]);
+
+  useEffect(() => {
+    let isActive = true;
+    projectApi.listCategories().then((data) => {
+      if (isActive) setApiCategories(Array.isArray(data) ? data : []);
+    }).catch(() => {});
+    return () => { isActive = false; };
+  }, []);
 
   async function loadProjects(nextSearchTerm = deferredSearchTerm, nextStatusFilter = statusFilter) {
     setIsLoadingProjects(true);
@@ -202,10 +258,7 @@ function Projects() {
       ...currentResult,
       items: currentResult.items.map((item) =>
         item.projectId === project.projectId
-          ? {
-              ...item,
-              ...project,
-            }
+          ? { ...item, ...project }
           : item,
       ),
     }));
@@ -227,32 +280,23 @@ function Projects() {
           limit: 100,
         });
 
-        if (!isActive) {
-          return;
-        }
+        if (!isActive) return;
 
         setProjectsResult({
           items: Array.isArray(data?.items) ? data.items : [],
           pagination: data?.pagination ?? null,
         });
       } catch (error) {
-        if (!isActive) {
-          return;
-        }
-
+        if (!isActive) return;
         setProjectsErrorMessage(error.message);
       } finally {
-        if (isActive) {
-          setIsLoadingProjects(false);
-        }
+        if (isActive) setIsLoadingProjects(false);
       }
     }
 
     run();
 
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, [deferredSearchTerm, statusFilter]);
 
   useEffect(() => {
@@ -272,32 +316,23 @@ function Projects() {
       try {
         const project = await projectApi.get(projectId);
 
-        if (!isActive) {
-          return;
-        }
+        if (!isActive) return;
 
         setSelectedProject(project);
         setEditForm(buildProjectForm(project));
       } catch (error) {
-        if (!isActive) {
-          return;
-        }
-
+        if (!isActive) return;
         setDetailErrorMessage(error.message);
         setSelectedProject(null);
         setEditForm(EMPTY_PROJECT_FORM);
       } finally {
-        if (isActive) {
-          setIsLoadingDetail(false);
-        }
+        if (isActive) setIsLoadingDetail(false);
       }
     }
 
     run();
 
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, [projectId]);
 
   const selectedProjectMembers = getProjectMembers(selectedProject);
@@ -311,9 +346,7 @@ function Projects() {
   async function handleCreateProject(event) {
     event.preventDefault();
 
-    if (isCreatingProject) {
-      return;
-    }
+    if (isCreatingProject) return;
 
     setProjectsErrorMessage("");
     setStatusMessage("");
@@ -323,14 +356,13 @@ function Projects() {
       const project = await projectApi.create({
         title: createForm.title.trim(),
         requiredSkill: createForm.requiredSkill.trim(),
+        categoryId: createForm.categoryId,
         status: createForm.status,
         description: createForm.description.trim(),
       });
 
       setCreateForm(EMPTY_PROJECT_FORM);
-      const nextSearchParams = new URLSearchParams(searchParams);
-      nextSearchParams.delete("create");
-      setSearchParams(nextSearchParams, { replace: true });
+      setIsCreateFormOpen(false);
       setStatusMessage("Project created successfully.");
       await loadProjects(searchTerm, statusFilter);
       navigate(`/app/projects/${encodeURIComponent(project.projectId)}`);
@@ -342,9 +374,7 @@ function Projects() {
   }
 
   async function handleSaveProject() {
-    if (!selectedProject || !isSelectedProjectOwner || isSavingProject) {
-      return;
-    }
+    if (!selectedProject || !isSelectedProjectOwner || isSavingProject) return;
 
     setDetailErrorMessage("");
     setStatusMessage("");
@@ -354,6 +384,7 @@ function Projects() {
       const updatedProject = await projectApi.update(selectedProject.projectId, {
         title: editForm.title.trim(),
         requiredSkill: editForm.requiredSkill.trim(),
+        categoryId: editForm.categoryId,
         status: editForm.status,
         description: editForm.description.trim(),
       });
@@ -368,9 +399,7 @@ function Projects() {
   }
 
   async function handleDeleteProject() {
-    if (!selectedProject || !isSelectedProjectOwner || isDeletingProject) {
-      return;
-    }
+    if (!selectedProject || !isSelectedProjectOwner || isDeletingProject) return;
 
     setDetailErrorMessage("");
     setStatusMessage("");
@@ -392,9 +421,7 @@ function Projects() {
   }
 
   async function handleToggleMembership(project) {
-    if (!project?.projectId || !user?.userId || isTogglingMembership) {
-      return;
-    }
+    if (!project?.projectId || !user?.userId || isTogglingMembership) return;
 
     const isMember = isProjectMember(project, user.userId);
     const projectActionId = project.projectId;
@@ -409,18 +436,13 @@ function Projects() {
         ? await projectApi.leave(project.projectId)
         : await projectApi.join(project.projectId);
 
-      if (!isMember) {
-        refreshNotifications();
-      }
+      if (!isMember) refreshNotifications();
 
       setProjectsResult((currentResult) => ({
         ...currentResult,
         items: currentResult.items.map((item) =>
           item.projectId === updatedProject.projectId
-            ? {
-                ...item,
-                ...updatedProject,
-              }
+            ? { ...item, ...updatedProject }
             : item,
         ),
       }));
@@ -444,9 +466,7 @@ function Projects() {
   }
 
   async function handleRemoveMember(memberUserId) {
-    if (!selectedProject?.projectId || !memberUserId || removingMemberUserId) {
-      return;
-    }
+    if (!selectedProject?.projectId || !memberUserId || removingMemberUserId) return;
 
     setDetailErrorMessage("");
     setStatusMessage("");
@@ -464,9 +484,7 @@ function Projects() {
   }
 
   async function handleApproveRequest(requestUserId) {
-    if (!selectedProject?.projectId || !requestUserId || processingRequestUserId) {
-      return;
-    }
+    if (!selectedProject?.projectId || !requestUserId || processingRequestUserId) return;
 
     setDetailErrorMessage("");
     setStatusMessage("");
@@ -484,9 +502,7 @@ function Projects() {
   }
 
   async function handleRejectRequest(requestUserId) {
-    if (!selectedProject?.projectId || !requestUserId || processingRequestUserId) {
-      return;
-    }
+    if (!selectedProject?.projectId || !requestUserId || processingRequestUserId) return;
 
     setDetailErrorMessage("");
     setStatusMessage("");
@@ -503,13 +519,17 @@ function Projects() {
     }
   }
 
-  const totalProjects = projectsResult.pagination?.total ?? projectsResult.items.length;
+  const pageTitle = isProjectDetail
+    ? (selectedProject?.title || "Project")
+    : categoryId
+    ? (selectedCategory?.categoryName || "Projects")
+    : "Explore Projects";
 
   return (
     <ViewFrame
       header={
         <header className="projects-page__header">
-          <h1>{selectedProject?.title || "Explore Projects"}</h1>
+          <h1>{pageTitle}</h1>
         </header>
       }
     >
@@ -532,86 +552,23 @@ function Projects() {
               </label>
 
               <p className="projects-page__summary-text">
-                {totalProjects} project{totalProjects === 1 ? "" : "s"}
+                {categoryId
+                  ? `${filteredProjects.length} project${filteredProjects.length === 1 ? "" : "s"}`
+                  : `${categoryCards.length} categor${categoryCards.length === 1 ? "y" : "ies"}`}
               </p>
 
               <button
                 type="button"
                 className="projects-page__create-button"
-                onClick={() => navigate("/app/profile?tab=projects&create=1")}
+                onClick={() => {
+                  setCreateForm({ ...EMPTY_PROJECT_FORM, categoryId: categoryId || "" });
+                  setIsCreateFormOpen(true);
+                }}
               >
                 Create Project
               </button>
             </div>
 
-            {isCreatePanelOpen ? (
-              <form className="projects-page__create-panel" onSubmit={handleCreateProject}>
-                <div>
-                  <p className="projects-page__eyebrow">New project</p>
-                  <h2>Create a project workspace</h2>
-                </div>
-                <div className="projects-page__form-grid">
-                  <label className="projects-page__field">
-                    <span>Title</span>
-                    <input
-                      type="text"
-                      minLength={3}
-                      value={createForm.title}
-                      onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))}
-                      placeholder="e.g. Build a Fenneky mobile dashboard"
-                      required
-                    />
-                  </label>
-                  <label className="projects-page__field">
-                    <span>Required skill</span>
-                    <input
-                      type="text"
-                      value={createForm.requiredSkill}
-                      onChange={(e) => setCreateForm((c) => ({ ...c, requiredSkill: e.target.value }))}
-                      placeholder="e.g. React Native"
-                    />
-                  </label>
-                  <label className="projects-page__field">
-                    <span>Status</span>
-                    <ThemedSelect
-                      value={createForm.status}
-                      options={EDITABLE_PROJECT_STATUS_OPTIONS}
-                      onChange={(v) => setCreateForm((c) => ({ ...c, status: v }))}
-                    />
-                  </label>
-                  <label className="projects-page__field">
-                    <span>Description</span>
-                    <textarea
-                      rows="4"
-                      value={createForm.description}
-                      onChange={(e) => setCreateForm((c) => ({ ...c, description: e.target.value }))}
-                      placeholder="Describe the project and what kind of help you need."
-                    />
-                  </label>
-                </div>
-                <div className="projects-page__panel-actions">
-                  <button
-                    type="button"
-                    className="projects-page__button projects-page__button--ghost"
-                    onClick={() => {
-                      setCreateForm(EMPTY_PROJECT_FORM);
-                      const p = new URLSearchParams(searchParams);
-                      p.delete("create");
-                      setSearchParams(p, { replace: true });
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="projects-page__button projects-page__button--primary"
-                    disabled={isCreatingProject}
-                  >
-                    {isCreatingProject ? "Creating..." : "Create project"}
-                  </button>
-                </div>
-              </form>
-            ) : null}
           </div>
         </div>
 
@@ -621,20 +578,154 @@ function Projects() {
             {projectsErrorMessage ? <p style={{ color: "#c94f2e" }}>{projectsErrorMessage}</p> : null}
             {statusMessage ? <p className="projects-page__status-message">{statusMessage}</p> : null}
 
+            {isCreateFormOpen ? (
+              <article className="projects-page__create-card">
+                <div className="projects-page__create-head">
+                  <p className="projects-page__eyebrow">New project</p>
+                  <h2>Create a project workspace</h2>
+                </div>
+                <form className="projects-page__create-form" onSubmit={handleCreateProject}>
+                  <div className="projects-page__form-grid">
+                    <label className="projects-page__field">
+                      <span>Title</span>
+                      <input
+                        type="text"
+                        minLength={3}
+                        value={createForm.title}
+                        onChange={(e) => setCreateForm((c) => ({ ...c, title: e.target.value }))}
+                        placeholder="e.g. Build a Fenneky mobile dashboard"
+                        required
+                      />
+                    </label>
+                    <label className="projects-page__field">
+                      <span>Category</span>
+                      <select
+                        value={createForm.categoryId}
+                        onChange={(e) => setCreateForm((c) => ({ ...c, categoryId: e.target.value }))}
+                      >
+                        <option value="">— No category —</option>
+                        {apiCategories.map((cat) => (
+                          <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="projects-page__field">
+                      <span>Required skill</span>
+                      <input
+                        type="text"
+                        value={createForm.requiredSkill}
+                        onChange={(e) => setCreateForm((c) => ({ ...c, requiredSkill: e.target.value }))}
+                        placeholder="e.g. React Native"
+                      />
+                    </label>
+                    <label className="projects-page__field">
+                      <span>Status</span>
+                      <ThemedSelect
+                        value={createForm.status}
+                        options={EDITABLE_PROJECT_STATUS_OPTIONS}
+                        onChange={(v) => setCreateForm((c) => ({ ...c, status: v }))}
+                      />
+                    </label>
+                    <label className="projects-page__field projects-page__field--full">
+                      <span>Description</span>
+                      <textarea
+                        rows="4"
+                        value={createForm.description}
+                        onChange={(e) => setCreateForm((c) => ({ ...c, description: e.target.value }))}
+                        placeholder="Describe the project and what kind of help you need."
+                      />
+                    </label>
+                  </div>
+                  <div className="projects-page__create-actions">
+                    <button
+                      type="button"
+                      className="projects-page__button projects-page__button--ghost"
+                      onClick={() => { setCreateForm(EMPTY_PROJECT_FORM); setIsCreateFormOpen(false); }}
+                      disabled={isCreatingProject}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="projects-page__button projects-page__button--primary"
+                      disabled={isCreatingProject}
+                    >
+                      {isCreatingProject ? "Creating..." : "Create project"}
+                    </button>
+                  </div>
+                </form>
+              </article>
+            ) : null}
+
             {isLoadingProjects ? (
               <div className="projects-page__empty">Loading projects...</div>
-            ) : !projectId ? (
-              /* List view — category-style cards */
+            ) : !param ? (
+              /* ── View 1: Categories grid ── */
               <section className="projects-page__section">
-                {projectsResult.items.length > 0 ? (
+                {categoryCards.length > 0 ? (
                   <div className="projects-page__category-grid">
-                    {projectsResult.items.map((project) => {
-                      const theme = getProjectTheme(project.status);
-                      const memberCount = getProjectMembers(project).length;
+                    {categoryCards.map((cat, index) => {
+                      const theme = getCategoryTheme(index);
                       return (
                         <Link
+                          key={cat.categoryId}
+                          to={`/app/projects/${encodeURIComponent(cat.categoryId)}`}
+                          className="projects-page__category-card projects-page__category-card--link"
+                          style={{
+                            "--projects-from": theme.from,
+                            "--projects-to": theme.to,
+                            "--projects-soft": theme.soft,
+                            "--projects-ink": theme.ink,
+                          }}
+                        >
+                          <span className="projects-page__category-badge">
+                            {getCategoryCode(cat.categoryName)}
+                          </span>
+                          <strong>{cat.categoryName}</strong>
+                          <span className="projects-page__category-stat">
+                            {cat.totalProjects} project{cat.totalProjects !== 1 ? "s" : ""}
+                          </span>
+                          <span className="projects-page__category-meta">
+                            {cat.totalMembers} member{cat.totalMembers !== 1 ? "s" : ""}
+                          </span>
+                          <span className="projects-page__category-date">Browse projects →</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="projects-page__empty">No categories available yet.</div>
+                )}
+              </section>
+            ) : !isProjectDetail ? (
+              /* ── View 2: Project cards for a category ── */
+              <section className="projects-page__section projects-page__section--sessions">
+                <div className="projects-page__section-header projects-page__section-header--split">
+                  <div>
+                    <p className="projects-page__eyebrow">Projects</p>
+                    <h2>{selectedCategory?.categoryName || categoryId}</h2>
+                    <p className="projects-page__section-copy">
+                      Browse and join projects in this category.
+                    </p>
+                  </div>
+                </div>
+
+                <Link className="projects-page__back-link" to="/app/projects">
+                  ← Return to categories
+                </Link>
+
+                {filteredProjects.length > 0 ? (
+                  <div className="projects-page__category-grid">
+                    {filteredProjects.map((project) => {
+                      const theme = getProjectTheme(project.status);
+                      const memberCount = getProjectMembers(project).length;
+                      const isPending = hasPendingJoinRequest(project, user?.userId);
+                      const isMember = isProjectMember(project, user?.userId);
+                      const isOwner = project.ownerId === user?.userId;
+                      const canJoin = canJoinProject(project, user?.userId);
+                      return (
+                        <article
                           key={project.projectId}
-                          to={`/app/projects/${encodeURIComponent(project.projectId)}`}
                           className="projects-page__category-card"
                           style={{
                             "--projects-from": theme.from,
@@ -646,26 +737,66 @@ function Projects() {
                           <span className="projects-page__category-badge">
                             {getProjectInitials(project.title)}
                           </span>
-                          <strong>{project.title}</strong>
-                          <span className="projects-page__category-stat">
-                            {memberCount} member{memberCount !== 1 ? "s" : ""}
-                          </span>
+                          <strong title={project.title}>{project.title}</strong>
                           <span className="projects-page__category-meta">
-                            {formatProjectStatus(project.status)}
+                            {isPending ? "Request pending" : isMember ? "Member" : formatProjectStatus(project.status)}
                           </span>
+
+                          <div className="projects-page__card-meta">
+                            <span className="projects-page__meta-item">
+                              <span className="projects-page__meta-icon"><PeopleIcon /></span>
+                              {memberCount} member{memberCount !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+
                           <span className="projects-page__category-date">
-                            Skill: {project.requiredSkill || "Not specified"}
+                            {project.description
+                              ? project.description.length > 52
+                                ? project.description.slice(0, 52) + "…"
+                                : project.description
+                              : "No description yet."}
                           </span>
-                        </Link>
+
+                          {isOwner ? (
+                            <Link
+                              to={`/app/projects/${encodeURIComponent(project.projectId)}`}
+                              className="projects-page__join-button projects-page__join-button--link"
+                            >
+                              Manage
+                            </Link>
+                          ) : isMember ? (
+                            <button
+                              type="button"
+                              className="projects-page__join-button projects-page__join-button--ghost"
+                              disabled={isTogglingMembership === project.projectId}
+                              onClick={() => handleToggleMembership(project)}
+                            >
+                              {isTogglingMembership === project.projectId ? "Leaving…" : "Leave"}
+                            </button>
+                          ) : isPending ? (
+                            <button type="button" className="projects-page__join-button" disabled>
+                              Request pending
+                            </button>
+                          ) : canJoin ? (
+                            <button
+                              type="button"
+                              className="projects-page__join-button"
+                              disabled={isTogglingMembership === project.projectId}
+                              onClick={() => handleToggleMembership(project)}
+                            >
+                              {isTogglingMembership === project.projectId ? "Requesting…" : "Join"}
+                            </button>
+                          ) : null}
+                        </article>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="projects-page__empty">No projects match this search yet.</div>
+                  <div className="projects-page__empty">No projects in this category yet.</div>
                 )}
               </section>
             ) : (
-              /* Detail view */
+              /* ── View 3: Project detail (owner management) ── */
               <section className="projects-page__section projects-page__section--detail">
                 <div className="projects-page__section-header projects-page__section-header--split">
                   <div>
@@ -679,7 +810,12 @@ function Projects() {
                   </div>
                 </div>
 
-                <Link className="projects-page__back-link" to="/app/projects">
+                <Link
+                  className="projects-page__back-link"
+                  to={selectedProject?.categoryId
+                    ? `/app/projects/${encodeURIComponent(selectedProject.categoryId)}`
+                    : "/app/projects"}
+                >
                   ← Return to projects
                 </Link>
 
@@ -698,101 +834,51 @@ function Projects() {
                       <span>Created: {formatDateTimeLabel(selectedProject.createdAt)}</span>
                     </div>
 
-                    {/* Guest action */}
-                    {!isSelectedProjectOwner ? (
-                      <div>
-                        {isSelectedProjectMember ? (
-                          <button
-                            type="button"
-                            className="projects-page__join-button projects-page__join-button--ghost"
-                            disabled={isTogglingMembership === selectedProject.projectId}
-                            onClick={() => handleToggleMembership(selectedProject)}
-                          >
-                            {isTogglingMembership === selectedProject.projectId ? "Leaving..." : "Leave project"}
-                          </button>
-                        ) : isSelectedProjectJoinPending ? (
-                          <button type="button" className="projects-page__join-button" disabled>
-                            Request pending
-                          </button>
-                        ) : canJoinProject(selectedProject, user?.userId) ? (
-                          <button
-                            type="button"
-                            className="projects-page__join-button"
-                            disabled={isTogglingMembership === selectedProject.projectId}
-                            onClick={() => handleToggleMembership(selectedProject)}
-                          >
-                            {isTogglingMembership === selectedProject.projectId ? "Requesting..." : "Join project"}
-                          </button>
-                        ) : (
-                          <p style={{ color: "#7a3412", fontSize: "0.95rem" }}>
-                            This project is not open for new joins right now.
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
-
-                    {/* Owner catalog cards */}
                     {isSelectedProjectOwner ? (
                       <div className="projects-page__catalog-grid">
-                        {/* Edit card */}
                         <article className="projects-page__catalog-card">
                           <p className="projects-page__eyebrow">Owner tools</p>
                           <h3>Edit project</h3>
                           <div className="projects-page__form-grid">
                             <label className="projects-page__field">
                               <span>Title</span>
-                              <input
-                                type="text"
-                                value={editForm.title}
-                                onChange={(e) => setEditForm((c) => ({ ...c, title: e.target.value }))}
-                              />
+                              <input type="text" value={editForm.title} onChange={(e) => setEditForm((c) => ({ ...c, title: e.target.value }))} />
+                            </label>
+                            <label className="projects-page__field">
+                              <span>Category</span>
+                              <select
+                                value={editForm.categoryId}
+                                onChange={(e) => setEditForm((c) => ({ ...c, categoryId: e.target.value }))}
+                              >
+                                <option value="">No category</option>
+                                {apiCategories.map((cat) => (
+                                  <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>
+                                ))}
+                              </select>
                             </label>
                             <label className="projects-page__field">
                               <span>Required skill</span>
-                              <input
-                                type="text"
-                                value={editForm.requiredSkill}
-                                onChange={(e) => setEditForm((c) => ({ ...c, requiredSkill: e.target.value }))}
-                              />
+                              <input type="text" value={editForm.requiredSkill} onChange={(e) => setEditForm((c) => ({ ...c, requiredSkill: e.target.value }))} />
                             </label>
                             <label className="projects-page__field">
                               <span>Status</span>
-                              <ThemedSelect
-                                value={editForm.status}
-                                options={EDITABLE_PROJECT_STATUS_OPTIONS}
-                                onChange={(v) => setEditForm((c) => ({ ...c, status: v }))}
-                              />
+                              <ThemedSelect value={editForm.status} options={EDITABLE_PROJECT_STATUS_OPTIONS} onChange={(v) => setEditForm((c) => ({ ...c, status: v }))} />
                             </label>
                             <label className="projects-page__field">
                               <span>Description</span>
-                              <textarea
-                                rows="4"
-                                value={editForm.description}
-                                onChange={(e) => setEditForm((c) => ({ ...c, description: e.target.value }))}
-                              />
+                              <textarea rows="4" value={editForm.description} onChange={(e) => setEditForm((c) => ({ ...c, description: e.target.value }))} />
                             </label>
                           </div>
                           <div className="projects-page__panel-actions">
-                            <button
-                              type="button"
-                              className="projects-page__button projects-page__button--danger"
-                              onClick={handleDeleteProject}
-                              disabled={isDeletingProject}
-                            >
+                            <button type="button" className="projects-page__button projects-page__button--danger" onClick={handleDeleteProject} disabled={isDeletingProject}>
                               {isDeletingProject ? "Deleting..." : "Delete"}
                             </button>
-                            <button
-                              type="button"
-                              className="projects-page__button projects-page__button--primary"
-                              onClick={handleSaveProject}
-                              disabled={isSavingProject}
-                            >
+                            <button type="button" className="projects-page__button projects-page__button--primary" onClick={handleSaveProject} disabled={isSavingProject}>
                               {isSavingProject ? "Saving..." : "Save changes"}
                             </button>
                           </div>
                         </article>
 
-                        {/* Join requests card */}
                         <article className="projects-page__catalog-card">
                           <p className="projects-page__eyebrow">Join requests</p>
                           <h3>Pending approvals</h3>
@@ -808,20 +894,10 @@ function Projects() {
                                     </div>
                                   </div>
                                   <div className="projects-page__member-actions">
-                                    <button
-                                      type="button"
-                                      className="projects-page__button projects-page__button--ghost"
-                                      disabled={processingRequestUserId === request.userId}
-                                      onClick={() => handleRejectRequest(request.userId)}
-                                    >
+                                    <button type="button" className="projects-page__button projects-page__button--ghost" disabled={processingRequestUserId === request.userId} onClick={() => handleRejectRequest(request.userId)}>
                                       {processingRequestUserId === request.userId ? "..." : "Reject"}
                                     </button>
-                                    <button
-                                      type="button"
-                                      className="projects-page__button projects-page__button--primary"
-                                      disabled={processingRequestUserId === request.userId}
-                                      onClick={() => handleApproveRequest(request.userId)}
-                                    >
+                                    <button type="button" className="projects-page__button projects-page__button--primary" disabled={processingRequestUserId === request.userId} onClick={() => handleApproveRequest(request.userId)}>
                                       {processingRequestUserId === request.userId ? "..." : "Approve"}
                                     </button>
                                   </div>
@@ -829,13 +905,10 @@ function Projects() {
                               ))}
                             </div>
                           ) : (
-                            <div className="projects-page__empty" style={{ minHeight: 80 }}>
-                              No pending requests.
-                            </div>
+                            <div className="projects-page__empty" style={{ minHeight: 80 }}>No pending requests.</div>
                           )}
                         </article>
 
-                        {/* Members card */}
                         <article className="projects-page__catalog-card">
                           <p className="projects-page__eyebrow">Members</p>
                           <h3>Project members</h3>
@@ -850,21 +923,14 @@ function Projects() {
                                       <span>Joined {formatDateTimeLabel(member.joinedAt)}</span>
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    className="projects-page__button projects-page__button--ghost"
-                                    disabled={removingMemberUserId === member.userId}
-                                    onClick={() => handleRemoveMember(member.userId)}
-                                  >
+                                  <button type="button" className="projects-page__button projects-page__button--ghost" disabled={removingMemberUserId === member.userId} onClick={() => handleRemoveMember(member.userId)}>
                                     {removingMemberUserId === member.userId ? "Removing..." : "Remove"}
                                   </button>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="projects-page__empty" style={{ minHeight: 80 }}>
-                              No members yet.
-                            </div>
+                            <div className="projects-page__empty" style={{ minHeight: 80 }}>No members yet.</div>
                           )}
                         </article>
                       </div>

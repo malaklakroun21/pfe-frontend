@@ -42,6 +42,8 @@ import AdminUsers from './component/Admin/Users/AdminUsers.jsx'
 import AdminReports from './component/Admin/Reports/AdminReports.jsx'
 import AdminAudit from './component/Admin/Audit/AdminAudit.jsx'
 import AdminSettings from './component/Admin/Settings/AdminSettings.jsx'
+import AdminSkills from './component/Admin/Skills/AdminSkills.jsx'
+import AdminMentorApplications from './component/Admin/MentorApplications/AdminMentorApplications.jsx'
 
 function LandingPage() {
   return (
@@ -446,6 +448,8 @@ const App = () => {
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit" element={<AdminAudit />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="skills" element={<AdminSkills />} />
+        <Route path="mentor-applications" element={<AdminMentorApplications />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

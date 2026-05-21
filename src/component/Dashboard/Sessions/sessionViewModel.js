@@ -72,10 +72,10 @@ function getNormalizedSessionDurationHours(session = {}) {
 
 function getNormalizedSessionCredits(session = {}) {
   const explicitCredits = Number(session.chargedCredits ?? session.creditsExchanged);
+  if (Number.isFinite(explicitCredits) && explicitCredits > 0) return explicitCredits;
 
-  if (Number.isFinite(explicitCredits) && explicitCredits > 0) {
-    return explicitCredits;
-  }
+  const sessionCredits = Number(session.sessionCredits);
+  if (Number.isFinite(sessionCredits) && sessionCredits > 0) return sessionCredits;
 
   return getNormalizedSessionDurationHours(session);
 }
@@ -232,7 +232,8 @@ export function mapDirectorySession(session, viewerUserId) {
 
   return {
     id: session.sessionId,
-    title: categoryLabel,
+    title: session.title?.trim() || categoryLabel,
+    categoryId: session.categoryId || '',
     categoryKey: buildCategoryKey(categoryLabel),
     categoryLabel,
     categoryCode: buildCategoryCode(categoryLabel),
@@ -252,7 +253,10 @@ export function mapDirectorySession(session, viewerUserId) {
     credits: formatCreditLabel(credits),
     status: statusConfig.tabKey,
     badge: statusConfig.badge,
+    googleMeetLink: session.googleMeetLink || "",
+    sessionDescription: session.message || "",
     searchText: [
+      session.title || "",
       categoryLabel,
       mentorName,
       buildFullName(learner),

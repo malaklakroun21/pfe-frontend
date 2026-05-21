@@ -566,75 +566,86 @@ function Settings() {
 
       <div className="settings-page__card">
         <h2 className="settings-page__title">Change Password</h2>
+        <button
+          type="button"
+          className="settings-page__submit settings-page__submit--inline"
+          onClick={() => setShowPasswordForm(true)}
+        >
+          Change Password
+        </button>
+      </div>
 
-        {!showPasswordForm ? (
-          <button
-            type="button"
-            className="settings-page__submit settings-page__submit--inline"
-            onClick={() => setShowPasswordForm(true)}
-          >
-            Change Password
-          </button>
-        ) : (
-          <form
-            className="settings-page__password-form"
-            onSubmit={handlePasswordSubmit}
-          >
-            <label className="settings-page__field">
-              <span>Current Password</span>
-              <div className="settings-page__password-wrap">
-                <input
-                  type={showCurrentPassword ? "text" : "password"}
-                  name="currentPassword"
-                  value={passwordValues.currentPassword}
-                  onChange={handlePasswordChange}
-                />
-                <button
-                  type="button"
-                  className="settings-page__password-toggle"
-                  aria-label={showCurrentPassword ? "Hide" : "Show"}
-                  onClick={() => setShowCurrentPassword((c) => !c)}
-                >
-                  <EyeIcon />
-                </button>
-              </div>
-            </label>
-
-            <label className="settings-page__field">
-              <span>New Password</span>
-              <input
-                type="password"
-                name="newPassword"
-                value={passwordValues.newPassword}
-                onChange={handlePasswordChange}
-              />
-            </label>
-
-            <label className="settings-page__field">
-              <span>Confirm New Password</span>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={passwordValues.confirmPassword}
-                onChange={handlePasswordChange}
-              />
-            </label>
-
-            <div className="settings-page__password-actions">
+      {showPasswordForm ? (
+        <div className="settings-page__modal-overlay" onClick={() => { setShowPasswordForm(false); setPasswordValues(initialPasswordValues); }}>
+          <div className="settings-page__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-page__modal-header">
+              <h3>Change Password</h3>
               <button
                 type="button"
-                className="settings-page__submit settings-page__submit--ghost"
-                onClick={() => setShowPasswordForm(false)}
+                className="settings-page__modal-close"
+                onClick={() => { setShowPasswordForm(false); setPasswordValues(initialPasswordValues); }}
               >
-                Cancel
-              </button>
-              <button type="submit" className="settings-page__submit settings-page__submit--inline">
-                Update Password
+                ✕
               </button>
             </div>
-          </form>
-        )}
-      </div>
+
+            <form className="settings-page__password-form" onSubmit={handlePasswordSubmit}>
+              <label className="settings-page__field">
+                <span>Current Password</span>
+                <div className="settings-page__password-wrap">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    name="currentPassword"
+                    value={passwordValues.currentPassword}
+                    onChange={handlePasswordChange}
+                  />
+                  <button
+                    type="button"
+                    className="settings-page__password-toggle"
+                    aria-label={showCurrentPassword ? "Hide" : "Show"}
+                    onClick={() => setShowCurrentPassword((c) => !c)}
+                  >
+                    <EyeIcon />
+                  </button>
+                </div>
+              </label>
+
+              <label className="settings-page__field">
+                <span>New Password</span>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordValues.newPassword}
+                  onChange={handlePasswordChange}
+                />
+              </label>
+
+              <label className="settings-page__field">
+                <span>Confirm New Password</span>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordValues.confirmPassword}
+                  onChange={handlePasswordChange}
+                />
+              </label>
+
+              <div className="settings-page__password-actions">
+                <button
+                  type="button"
+                  className="settings-page__submit settings-page__submit--ghost"
+                  onClick={() => { setShowPasswordForm(false); setPasswordValues(initialPasswordValues); }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="settings-page__submit settings-page__submit--inline">
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <section className="settings-page__card">
         <h2 className="settings-page__title">Notification Preferences</h2>

@@ -19,21 +19,6 @@
   background: transparent;
 }
 
-.sessions-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 22px 38px;
-  background: #ffffff;
-}
-
-.sessions-page__header h1 {
-  margin: 0;
-  font-size: clamp(1.9rem, 2.8vw, 2.35rem);
-  line-height: 1.05;
-  letter-spacing: -0.045em;
-}
 
 .sessions-page__meta-icon svg {
   width: 100%;
@@ -228,7 +213,7 @@
 
 .sessions-page__category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 22px;
 }
 
@@ -714,4 +699,170 @@
   .sessions-page__meta {
     gap: 16px 22px;
   }
+}
+
+/* ── Inline create session form ── */
+.sessions-page__create-card {
+  margin-bottom: 32px;
+  padding: 32px 36px 28px;
+  border: 1px solid rgba(238, 225, 208, 0.98);
+  border-radius: 30px;
+  background: #ffffff;
+  box-shadow: 0 18px 32px rgba(205, 186, 162, 0.12);
+}
+
+.sessions-page__create-head {
+  margin-bottom: 22px;
+}
+
+.sessions-page__create-head .sessions-page__eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cd4f17;
+}
+
+.sessions-page__create-head h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #10213f;
+}
+
+.sessions-page__create-error {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #ffe8e5;
+  color: #c0392b;
+  font-size: 0.9rem;
+}
+
+.sessions-page__create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sessions-page__create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+  margin-bottom: 24px;
+}
+
+.sessions-page__create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #5a3a1a;
+}
+
+.sessions-page__create-field--full {
+  grid-column: 1 / -1;
+}
+
+.sessions-page__create-field input,
+.sessions-page__create-field select,
+.sessions-page__create-field textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(216, 190, 164, 0.8);
+  border-radius: 14px;
+  background: #fdf8f3;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #10213f;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.sessions-page__create-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237b4d28' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.sessions-page__create-field input:focus,
+.sessions-page__create-field select:focus,
+.sessions-page__create-field textarea:focus {
+  border-color: #cd4f17;
+}
+
+.sessions-page__create-field textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.sessions-page__teacher-search {
+  position: relative;
+}
+
+.sessions-page__teacher-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  border: 1px solid rgba(216, 190, 164, 0.8);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(205, 186, 162, 0.22);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sessions-page__teacher-suggestions li {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.93rem;
+  color: #10213f;
+}
+
+.sessions-page__teacher-suggestions li:hover {
+  background: #fdf2eb;
+  color: #cd4f17;
+}
+
+.sessions-page__create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.sessions-page__catalog-host {
+  font-size: 0.82rem;
+  color: var(--sessions-category-ink, #7b2f10);
+  opacity: 0.75;
+  margin-top: -4px;
+}
+
+.sessions-page__meet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--sessions-category-soft, #fff0e3);
+  color: var(--sessions-category-ink, #7b2f10);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.sessions-page__meet-link:hover {
+  opacity: 0.8;
 }

@@ -3,6 +3,10 @@ import { clearAuthSession, getAccessToken } from "../authSession.js";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 const ADMIN_API_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL || "/api/admin";
 
+// Deduplicates identical in-flight GET requests so the same URL is never
+// fetched twice at the same time (e.g. from concurrent useEffect calls).
+const inflightRequests = new Map();
+
 function buildRequestUrl(path) {
   return `${API_BASE_URL}${path}`;
 }
@@ -34,6 +38,7 @@ async function parseResponse(response) {
 
 export async function apiRequest(path, options = {}) {
   const { body, headers, ...fetchOptions } = options;
+  const method = (fetchOptions.method || "GET").toUpperCase();
   const requestHeaders = new Headers(headers || {});
   const accessToken = getAccessToken();
 
@@ -46,6 +51,22 @@ export async function apiRequest(path, options = {}) {
   if (body !== undefined && !(body instanceof FormData)) {
     requestHeaders.set("Content-Type", "application/json");
     requestBody = JSON.stringify(body);
+  }
+
+  // Deduplicate concurrent identical GET requests
+  if (method === "GET" && !requestBody) {
+    const dedupeKey = `${API_BASE_URL}${path}`;
+    if (inflightRequests.has(dedupeKey)) {
+      return inflightRequests.get(dedupeKey);
+    }
+    const promise = fetch(buildRequestUrl(path), {
+      ...fetchOptions,
+      headers: requestHeaders,
+    })
+      .then(parseResponse)
+      .finally(() => inflightRequests.delete(dedupeKey));
+    inflightRequests.set(dedupeKey, promise);
+    return promise;
   }
 
   const response = await fetch(buildRequestUrl(path), {
@@ -203,10 +224,24 @@ export const sessionApi = {
   getTeacherDirectory() {
     return apiRequest("/sessions/teachers");
   },
+  canHost() {
+    return apiRequest("/sessions/can-host");
+  },
+  publish(payload) {
+    return apiRequest("/sessions/open", {
+      method: "POST",
+      body: payload,
+    });
+  },
   request(payload) {
     return apiRequest("/sessions/request", {
       method: "POST",
       body: payload,
+    });
+  },
+  join(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/join`, {
+      method: "POST",
     });
   },
   cancel(sessionId) {
@@ -282,6 +317,9 @@ export const projectApi = {
       method: "DELETE",
     });
   },
+  listCategories() {
+    return apiRequest("/projects/categories");
+  },
 };
 
 export const messageApi = {
@@ -336,6 +374,27 @@ export const notificationApi = {
   delete(notificationId) {
     return apiRequest(`/notifications/${notificationId}`, {
       method: "DELETE",
+    });
+  },
+};
+
+export const mentorApplicationApi = {
+  submit() {
+    return apiRequest("/mentor-applications", { method: "POST" });
+  },
+  getMyApplication() {
+    return apiRequest("/mentor-applications/me");
+  },
+  listApplications(params = {}) {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString();
+    return adminApiRequest(`/mentor-applications${qs ? `?${qs}` : ""}`);
+  },
+  reviewApplication(applicationId, payload) {
+    return adminApiRequest(`/mentor-applications/${encodeURIComponent(applicationId)}/review`, {
+      method: "PATCH",
+      body: payload,
     });
   },
 };
@@ -432,5 +491,42 @@ export const adminApi = {
       method: "PUT",
       body: payload,
     });
+  },
+};
+
+export const adminSkillsApi = {
+  listCategories(params = {}) {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
+    });
+    const qs = q.toString();
+    return adminApiRequest(`/skills/categories${qs ? `?${qs}` : ""}`);
+  },
+  createCategory(payload) {
+    return adminApiRequest("/skills/categories", { method: "POST", body: payload });
+  },
+  updateCategory(id, payload) {
+    return adminApiRequest(`/skills/categories/${id}`, { method: "PUT", body: payload });
+  },
+  deleteCategory(id) {
+    return adminApiRequest(`/skills/categories/${id}`, { method: "DELETE" });
+  },
+  listSkillDefinitions(params = {}) {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
+    });
+    const qs = q.toString();
+    return adminApiRequest(`/skills/definitions${qs ? `?${qs}` : ""}`);
+  },
+  createSkillDefinition(payload) {
+    return adminApiRequest("/skills/definitions", { method: "POST", body: payload });
+  },
+  updateSkillDefinition(id, payload) {
+    return adminApiRequest(`/skills/definitions/${id}`, { method: "PUT", body: payload });
+  },
+  deleteSkillDefinition(id) {
+    return adminApiRequest(`/skills/definitions/${id}`, { method: "DELETE" });
   },
 };

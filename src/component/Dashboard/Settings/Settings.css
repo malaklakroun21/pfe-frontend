@@ -326,6 +326,60 @@
   filter: brightness(1.02);
 }
 
+.settings-page__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-page__modal {
+  background: #fffdfb;
+  border: 1px solid rgba(16, 17, 20, 0.1);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 32px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+}
+
+.settings-page__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.settings-page__modal-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #101114;
+  margin: 0;
+}
+
+.settings-page__modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  background: transparent;
+  font-size: 14px;
+  color: rgba(16, 17, 20, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.settings-page__modal-close:hover {
+  background: rgba(16, 17, 20, 0.06);
+}
+
 .settings-page__password-form {
   display: flex;
   flex-direction: column;

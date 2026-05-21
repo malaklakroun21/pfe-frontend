@@ -247,6 +247,36 @@
   background: #c94f17;
 }
 
+.my-profile-page__tab-action-button--mentor {
+  border-color: #7c3aed;
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.my-profile-page__tab-action-button--mentor:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.my-profile-page__tab-action-button--mentor:disabled {
+  border-color: #c4b5fd;
+  background: #ede9fe;
+  color: #7c3aed;
+  cursor: default;
+}
+
+.my-profile-page__tab-action-button svg {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.my-profile-page__mentor-app-error {
+  font-size: 12px;
+  color: #b91c1c;
+  margin: 0;
+}
+
 .my-profile-page__tab {
   position: relative;
   display: inline-flex;
@@ -619,9 +649,11 @@
 }
 
 .my-profile-page__project-field input,
+.my-profile-page__project-field select,
 .my-profile-page__project-field .themed-select__trigger,
 .my-profile-page__project-field textarea,
 .my-profile-page__session-field input,
+.my-profile-page__session-field select,
 .my-profile-page__session-field .themed-select__trigger,
 .my-profile-page__session-field textarea {
   width: 100%;
@@ -635,6 +667,18 @@
   box-sizing: border-box;
 }
 
+.my-profile-page__project-field select,
+.my-profile-page__session-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236f4b33' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
 .my-profile-page__project-field textarea,
 .my-profile-page__session-field textarea {
   min-height: 110px;
@@ -642,10 +686,12 @@
 }
 
 .my-profile-page__project-field input:focus,
+.my-profile-page__project-field select:focus,
 .my-profile-page__project-field .themed-select__trigger:focus-visible,
 .my-profile-page__project-field .themed-select.is-open .themed-select__trigger,
 .my-profile-page__project-field textarea:focus,
 .my-profile-page__session-field input:focus,
+.my-profile-page__session-field select:focus,
 .my-profile-page__session-field .themed-select__trigger:focus-visible,
 .my-profile-page__session-field .themed-select.is-open .themed-select__trigger,
 .my-profile-page__session-field textarea:focus {

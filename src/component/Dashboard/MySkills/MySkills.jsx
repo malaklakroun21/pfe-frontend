@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { dashboardApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
+import { dashboardApi, mentorApplicationApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
 import LevelCard from "../../XP/LevelCard.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
@@ -24,6 +24,7 @@ const EMPTY_PROJECT_FORM = {
 const EMPTY_SESSION_FORM = {
   teacherId: "",
   skill: "",
+  categoryId: "",
   duration: "1",
   date: "",
   message: "",
@@ -427,6 +428,7 @@ function SessionsTab({
   onDeleteSession,
   isDeletingSessionId,
   teacherOptions = [],
+  categoryOptions = [],
 }) {
   const [teacherSearch, setTeacherSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -510,6 +512,21 @@ function SessionsTab({
                   placeholder="e.g. React"
                   required
                 />
+              </label>
+
+              <label className="my-profile-page__session-field">
+                <span>Category</span>
+                <select
+                  value={createSessionForm.categoryId}
+                  onChange={(event) => onChangeCreateSessionField("categoryId", event.target.value)}
+                >
+                  <option value="">— No category —</option>
+                  {categoryOptions.map((cat) => (
+                    <option key={cat.categoryId} value={cat.categoryId}>
+                      {cat.categoryName}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="my-profile-page__session-field">
@@ -928,6 +945,7 @@ function ProfileContent({
   projectDetailError,
   onCloseProject,
   teacherOptions = [],
+  sessionCategories = [],
 }) {
   switch (activeTabKey) {
     case "skills":
@@ -955,6 +973,7 @@ function ProfileContent({
           onDeleteSession={onDeleteSession}
           isDeletingSessionId={isDeletingSessionId}
           teacherOptions={teacherOptions}
+          categoryOptions={sessionCategories}
         />
       ) : null;
     case "projects":
@@ -996,6 +1015,7 @@ function MyProfile() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [createSessionError, setCreateSessionError] = useState("");
   const [teacherOptions, setTeacherOptions] = useState([]);
+  const [sessionCategories, setSessionCategories] = useState([]);
   const [sessionActionError, setSessionActionError] = useState("");
   const [selectedSession, setSelectedSession] = useState(null);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState("");
@@ -1007,6 +1027,19 @@ function MyProfile() {
   const [createProjectError, setCreateProjectError] = useState("");
   const [projectActionError, setProjectActionError] = useState("");
   const [isCancellingProjectId, setIsCancellingProjectId] = useState("");
+  const [mentorApplication, setMentorApplication] = useState(undefined);
+  const [isSubmittingMentorApp, setIsSubmittingMentorApp] = useState(false);
+  const [mentorAppError, setMentorAppError] = useState("");
+
+  useEffect(() => {
+    if (!isOwnProfile || user?.role !== "LEARNER") return;
+    let isActive = true;
+    mentorApplicationApi.getMyApplication().then((app) => {
+      if (isActive) setMentorApplication(app);
+    }).catch(() => {});
+    return () => { isActive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
 
   useEffect(() => {
     let isActive = true;
@@ -1021,46 +1054,21 @@ function MyProfile() {
               userApi.getUserById(userId),
               userApi.getUserRatings(userId),
               xpApi.getByUserId(userId).catch(() => null),
-            ]).then(([publicProfile, ratingSummary, xpProfile]) => {
-              return {
-                ...buildPublicProfileRecord(publicProfile, ratingSummary),
-                xp: xpProfile,
-              };
-            })
-          : await dashboardApi.getProfile().then(async (ownProfile) => {
-              const [xpProfile, settledResults] = await Promise.all([
-                xpApi.getMe().catch(() => null),
-                Promise.allSettled([
-                  sessionApi.list({ role: 'LEARNER' }),
-                  projectApi.list({
-                    memberId: ownProfile.id,
-                    limit: 100,
-                  }),
-                ]),
-              ]);
-              const sessionsResult = settledResults[0];
-              const projectsResult = settledResults[1];
-              const listedProjects =
-                projectsResult.status === "fulfilled" && Array.isArray(projectsResult.value?.items)
-                  ? projectsResult.value.items
-                  : [];
-              const projectDetailsResults = await Promise.allSettled(
-                listedProjects.map((project) => projectApi.get(project.projectId)),
-              );
-              const detailedProjects = projectDetailsResults
-                .filter((result) => result.status === "fulfilled")
-                .map((result) => result.value);
-
-              return {
-                ...ownProfile,
-                xp: xpProfile,
-                sessions:
-                  sessionsResult.status === "fulfilled" && Array.isArray(sessionsResult.value)
-                    ? sessionsResult.value
-                    : [],
-                projects: detailedProjects.length > 0 ? detailedProjects : listedProjects,
-              };
-            });
+            ]).then(([publicProfile, ratingSummary, xpProfile]) => ({
+              ...buildPublicProfileRecord(publicProfile, ratingSummary),
+              xp: xpProfile,
+            }))
+          : await Promise.all([
+              dashboardApi.getProfile(),
+              xpApi.getMe().catch(() => null),
+              sessionApi.list({ role: 'LEARNER' }).catch(() => null),
+              projectApi.list({ memberId: user?.userId, limit: 100 }).catch(() => null),
+            ]).then(([ownProfile, xpProfile, sessionsData, projectsData]) => ({
+              ...ownProfile,
+              xp: xpProfile,
+              sessions: Array.isArray(sessionsData) ? sessionsData : [],
+              projects: Array.isArray(projectsData?.items) ? projectsData.items : [],
+            }));
 
         if (!isActive) {
           return;
@@ -1130,6 +1138,12 @@ function MyProfile() {
       sessionApi.getTeacherDirectory().then((data) => {
         const options = (Array.isArray(data) ? data : []).map((t) => ({ value: t.id, label: t.name }));
         setTeacherOptions(options);
+      }).catch(() => {});
+    }
+
+    if (sessionCategories.length === 0) {
+      projectApi.listCategories().then((data) => {
+        setSessionCategories(Array.isArray(data) ? data : []);
       }).catch(() => {});
     }
 
@@ -1275,6 +1289,7 @@ function MyProfile() {
       await sessionApi.request({
         teacherId: createSessionForm.teacherId.trim(),
         skill: createSessionForm.skill.trim(),
+        categoryId: createSessionForm.categoryId || '',
         duration: Number(createSessionForm.duration),
         date: parsedDate.toISOString(),
         message: createSessionForm.message.trim(),
@@ -1383,6 +1398,20 @@ function MyProfile() {
   function handleCloseProject() {
     setSelectedProject(null);
     setProjectDetailError("");
+  }
+
+  async function handleRequestMentorship() {
+    if (isSubmittingMentorApp) return;
+    setMentorAppError("");
+    setIsSubmittingMentorApp(true);
+    try {
+      const app = await mentorApplicationApi.submit();
+      setMentorApplication(app);
+    } catch (error) {
+      setMentorAppError(error.message);
+    } finally {
+      setIsSubmittingMentorApp(false);
+    }
   }
 
   return (
@@ -1504,6 +1533,28 @@ function MyProfile() {
           ))}
         </nav>
 
+        {isOwnProfile && user?.role === "LEARNER" && mentorApplication?.applicationStatus !== "APPROVED" ? (
+          <div className="my-profile-page__tab-actions">
+            {mentorAppError ? (
+              <p className="my-profile-page__mentor-app-error">{mentorAppError}</p>
+            ) : null}
+            <button
+              type="button"
+              className="my-profile-page__tab-action-button my-profile-page__tab-action-button--mentor"
+              onClick={handleRequestMentorship}
+              disabled={isSubmittingMentorApp || mentorApplication?.applicationStatus === "PENDING"}
+            >
+              <ValidationIcon />
+              {isSubmittingMentorApp
+                ? "Submitting..."
+                : mentorApplication?.applicationStatus === "PENDING"
+                ? "Application Pending"
+                : mentorApplication?.applicationStatus === "REJECTED"
+                ? "Reapply for Mentorship"
+                : "Request Mentorship"}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <section className="my-profile-page__body">
@@ -1541,6 +1592,7 @@ function MyProfile() {
           projectDetailError={projectDetailError}
           onCloseProject={handleCloseProject}
           teacherOptions={teacherOptions}
+          sessionCategories={sessionCategories}
         />
       </section>
     </div>
