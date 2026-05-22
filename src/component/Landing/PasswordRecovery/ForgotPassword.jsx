@@ -5,7 +5,7 @@ function ForgotPassword({
   isSubmitting = false,
   errorMessage = "",
   successMessage = "",
-  debugResetUrl = "",
+  debugCode = "",
 }) {
   return (
     <section className="Recovery">
@@ -14,8 +14,8 @@ function ForgotPassword({
           <p className="Recovery-eyebrow">Password Help</p>
           <h1>Forgot your password?</h1>
           <p>
-            Enter the email linked to your account and we&apos;ll send you a reset link that
-            expires in 10 minutes.
+            Enter the email linked to your account and we&apos;ll send you a 6-digit
+            verification code that expires in 10 minutes.
           </p>
         </div>
 
@@ -43,14 +43,14 @@ function ForgotPassword({
             </p>
           ) : null}
 
-          {debugResetUrl ? (
+          {debugCode ? (
             <p className="Recovery-feedback Recovery-feedback--debug" aria-live="polite">
-              Development reset link: <a href={debugResetUrl}>Open reset password page</a>
+              [Dev] Verification code: <strong>{debugCode}</strong>
             </p>
           ) : null}
 
           <button type="submit" className="Recovery-submit" disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Send reset link"}
+            {isSubmitting ? "Sending..." : "Send verification code"}
           </button>
 
           <p className="Recovery-footer">

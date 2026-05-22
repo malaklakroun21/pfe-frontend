@@ -129,8 +129,8 @@ export const authApi = {
       body: payload,
     });
   },
-  resetPassword(token, payload) {
-    return apiRequest(`/auth/reset-password/${encodeURIComponent(token)}`, {
+  resetPassword(payload) {
+    return apiRequest("/auth/reset-password", {
       method: "POST",
       body: payload,
     });
@@ -489,6 +489,39 @@ export const adminApi = {
   updateSetting(key, payload) {
     return adminApiRequest(`/settings/${encodeURIComponent(key)}`, {
       method: "PUT",
+      body: payload,
+    });
+  },
+};
+
+export const mentoringRequestApi = {
+  submit(payload) {
+    if (payload instanceof FormData) {
+      return apiRequest("/mentoring-requests", { method: "POST", body: payload });
+    }
+    return apiRequest("/mentoring-requests", { method: "POST", body: payload });
+  },
+  getMyRequests(params = {}) {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString();
+    return apiRequest(`/mentoring-requests/my${qs ? `?${qs}` : ""}`);
+  },
+  listRequests(params = {}) {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString();
+    return adminApiRequest(`/mentoring-requests${qs ? `?${qs}` : ""}`);
+  },
+  approveRequest(requestId, payload = {}) {
+    return adminApiRequest(`/mentoring-requests/${encodeURIComponent(requestId)}/approve`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+  rejectRequest(requestId, payload = {}) {
+    return adminApiRequest(`/mentoring-requests/${encodeURIComponent(requestId)}/reject`, {
+      method: "PATCH",
       body: payload,
     });
   },

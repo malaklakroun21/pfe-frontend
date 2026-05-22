@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "./PasswordRecovery.css";
 
-function ResetPassword({ isSubmitting = false, errorMessage = "", isTokenMissing = false }) {
+function ResetPassword({ isSubmitting = false, errorMessage = "" }) {
   return (
     <section className="Recovery">
       <div className="Recovery-container">
@@ -9,12 +9,25 @@ function ResetPassword({ isSubmitting = false, errorMessage = "", isTokenMissing
           <p className="Recovery-eyebrow">New Password</p>
           <h1>Reset your password</h1>
           <p>
-            Choose a new password with at least 8 characters, one uppercase letter, and one
-            number.
+            Enter the 6-digit code we sent to your email, then choose a new password
+            with at least 8 characters, one uppercase letter, and one number.
           </p>
         </div>
 
         <form className="Recovery-form">
+          <div className="Recovery-field">
+            <label htmlFor="code">Verification code</label>
+            <input
+              id="code"
+              name="code"
+              type="text"
+              inputMode="numeric"
+              placeholder="123456"
+              maxLength={6}
+              autoComplete="one-time-code"
+            />
+          </div>
+
           <div className="Recovery-field">
             <label htmlFor="password">New password</label>
             <input
@@ -43,16 +56,12 @@ function ResetPassword({ isSubmitting = false, errorMessage = "", isTokenMissing
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            className="Recovery-submit"
-            disabled={isSubmitting || isTokenMissing}
-          >
+          <button type="submit" className="Recovery-submit" disabled={isSubmitting}>
             {isSubmitting ? "Resetting..." : "Reset password"}
           </button>
 
           <p className="Recovery-footer">
-            Need a fresh link? <Link to="/forgot-password">Request another reset email</Link>
+            Didn&apos;t receive a code? <Link to="/forgot-password">Send a new code</Link>
           </p>
         </form>
       </div>

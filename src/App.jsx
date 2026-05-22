@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import Header from './component/Landing/Header/Header.jsx'
 import Hero from './component/Landing/Hero/Hero.jsx'
@@ -44,6 +44,7 @@ import AdminAudit from './component/Admin/Audit/AdminAudit.jsx'
 import AdminSettings from './component/Admin/Settings/AdminSettings.jsx'
 import AdminSkills from './component/Admin/Skills/AdminSkills.jsx'
 import AdminMentorApplications from './component/Admin/MentorApplications/AdminMentorApplications.jsx'
+import AdminMentoringRequests from './component/Admin/MentoringRequests/AdminMentoringRequests.jsx'
 
 function LandingPage() {
   return (
@@ -192,16 +193,17 @@ function SignupPage() {
 }
 
 function ForgotPasswordPage() {
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
-  const [debugResetUrl, setDebugResetUrl] = useState("")
+  const [debugCode, setDebugCode] = useState("")
 
   const handleSubmitCapture = async (event) => {
     event.preventDefault()
     setErrorMessage("")
     setSuccessMessage("")
-    setDebugResetUrl("")
+    setDebugCode("")
 
     const email = event.target.elements.namedItem("email")?.value?.trim()
 
@@ -215,10 +217,14 @@ function ForgotPasswordPage() {
     try {
       const response = await authApi.forgotPassword({ email })
       setSuccessMessage(
-        response?.message || "If that email exists, a reset link has been sent."
+        response?.message || "If that email exists, a verification code has been sent."
       )
-      setDebugResetUrl(response?.debugResetUrl || "")
+      if (response?.debugCode) {
+        setDebugCode(response.debugCode)
+      }
       event.target.reset()
+      // Navigate to reset page with email so the user doesn't have to retype it
+      navigate("/reset-password", { state: { email } })
     } catch (error) {
       setErrorMessage(error.message)
     } finally {
@@ -232,7 +238,7 @@ function ForgotPasswordPage() {
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         successMessage={successMessage}
-        debugResetUrl={debugResetUrl}
+        debugCode={debugCode}
       />
     </div>
   )
@@ -240,22 +246,28 @@ function ForgotPasswordPage() {
 
 function ResetPasswordPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const location = useLocation()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const token = searchParams.get("token")?.trim() || ""
+  const email = location.state?.email || ""
 
   const handleSubmitCapture = async (event) => {
     event.preventDefault()
     setErrorMessage("")
 
-    if (!token) {
-      setErrorMessage("Invalid or missing reset token.")
+    const code = event.target.elements.namedItem("code")?.value?.trim() || ""
+    const password = event.target.elements.namedItem("password")?.value || ""
+    const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+
+    if (!code) {
+      setErrorMessage("Veuillez saisir le code de vérification.")
       return
     }
 
-    const password = event.target.elements.namedItem("password")?.value || ""
-    const confirmPassword = event.target.elements.namedItem("confirm-password")?.value || ""
+    if (!/^\d{6}$/.test(code)) {
+      setErrorMessage("Le code doit contenir exactement 6 chiffres.")
+      return
+    }
 
     if (!password || !confirmPassword) {
       setErrorMessage("Veuillez remplir les deux champs du mot de passe.")
@@ -285,7 +297,7 @@ function ResetPasswordPage() {
     setIsSubmitting(true)
 
     try {
-      const session = await authApi.resetPassword(token, { password })
+      const session = await authApi.resetPassword({ email, code, password })
       setAuthSession(session)
       navigate(getDefaultAuthenticatedRoute(session?.user), { replace: true })
     } catch (error) {
@@ -300,7 +312,6 @@ function ResetPasswordPage() {
       <ResetPassword
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
-        isTokenMissing={!token}
       />
     </div>
   )
@@ -450,6 +461,7 @@ const App = () => {
         <Route path="settings" element={<AdminSettings />} />
         <Route path="skills" element={<AdminSkills />} />
         <Route path="mentor-applications" element={<AdminMentorApplications />} />
+        <Route path="mentoring-requests" element={<AdminMentoringRequests />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
