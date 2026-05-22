@@ -186,7 +186,14 @@ function Notifications() {
                 } ${notification.type === "request" ? "is-clickable" : ""}`}
                 onClick={
                   notification.type === "request"
-                    ? () => navigate("/app/validation")
+                    ? () => {
+                        const entityId = notification.relatedEntityId || "";
+                        if (entityId.toUpperCase().startsWith("PRJ-")) {
+                          navigate(`/app/projects/${encodeURIComponent(entityId)}`);
+                        } else {
+                          navigate("/app/validation");
+                        }
+                      }
                     : undefined
                 }
               >

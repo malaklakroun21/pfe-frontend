@@ -244,6 +244,17 @@ export const sessionApi = {
       method: "POST",
     });
   },
+  complete(sessionId, payload = {}) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/complete`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+  confirm(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/confirm`, {
+      method: "PATCH",
+    });
+  },
   cancel(sessionId) {
     return apiRequest(`/sessions/${sessionId}/cancel`, {
       method: "PATCH",
@@ -253,6 +264,24 @@ export const sessionApi = {
     return apiRequest(`/sessions/${sessionId}`, {
       method: "DELETE",
     });
+  },
+};
+
+export const trustApi = {
+  getSkillProfiles(userId) {
+    return apiRequest(`/trust/skills/${encodeURIComponent(userId)}`);
+  },
+  getSkillProfile(userId, skillId) {
+    return apiRequest(`/trust/skills/${encodeURIComponent(userId)}/${encodeURIComponent(skillId)}`);
+  },
+  endorse(payload) {
+    return apiRequest("/trust/endorse", { method: "POST", body: payload });
+  },
+  getReceivedEndorsements() {
+    return apiRequest("/trust/endorsements/received");
+  },
+  getEndorsableProjects(toUserId) {
+    return apiRequest(`/trust/endorsable-projects?toUserId=${encodeURIComponent(toUserId)}`);
   },
 };
 
@@ -357,6 +386,47 @@ export const xpApi = {
   },
 };
 
+export const challengeApi = {
+  list(params = {}) {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString();
+    return apiRequest(`/challenges${qs ? `?${qs}` : ""}`);
+  },
+  get(challengeId) {
+    return apiRequest(`/challenges/${encodeURIComponent(challengeId)}`);
+  },
+  submit(challengeId, payload) {
+    return apiRequest(`/challenges/${encodeURIComponent(challengeId)}/entries`, {
+      method: "POST",
+      body: payload,
+    });
+  },
+  getLeaderboard(challengeId) {
+    return apiRequest(`/challenges/${encodeURIComponent(challengeId)}/leaderboard`);
+  },
+  create(payload) {
+    return apiRequest("/challenges", { method: "POST", body: payload });
+  },
+  pickWinners(challengeId, entryIds) {
+    return apiRequest(`/challenges/${encodeURIComponent(challengeId)}/winners`, {
+      method: "PATCH",
+      body: { entryIds },
+    });
+  },
+  close(challengeId) {
+    return apiRequest(`/challenges/${encodeURIComponent(challengeId)}/close`, {
+      method: "PATCH",
+    });
+  },
+};
+
+export const leaderboardApi = {
+  getWeeklyXp() {
+    return apiRequest("/leaderboard/weekly-xp");
+  },
+};
+
 export const notificationApi = {
   list() {
     return apiRequest("/notifications");
@@ -379,8 +449,8 @@ export const notificationApi = {
 };
 
 export const mentorApplicationApi = {
-  submit() {
-    return apiRequest("/mentor-applications", { method: "POST" });
+  submit(payload = {}) {
+    return apiRequest("/mentor-applications", { method: "POST", body: payload });
   },
   getMyApplication() {
     return apiRequest("/mentor-applications/me");
@@ -494,38 +564,6 @@ export const adminApi = {
   },
 };
 
-export const mentoringRequestApi = {
-  submit(payload) {
-    if (payload instanceof FormData) {
-      return apiRequest("/mentoring-requests", { method: "POST", body: payload });
-    }
-    return apiRequest("/mentoring-requests", { method: "POST", body: payload });
-  },
-  getMyRequests(params = {}) {
-    const q = new URLSearchParams();
-    if (params.status) q.set("status", params.status);
-    const qs = q.toString();
-    return apiRequest(`/mentoring-requests/my${qs ? `?${qs}` : ""}`);
-  },
-  listRequests(params = {}) {
-    const q = new URLSearchParams();
-    if (params.status) q.set("status", params.status);
-    const qs = q.toString();
-    return adminApiRequest(`/mentoring-requests${qs ? `?${qs}` : ""}`);
-  },
-  approveRequest(requestId, payload = {}) {
-    return adminApiRequest(`/mentoring-requests/${encodeURIComponent(requestId)}/approve`, {
-      method: "PATCH",
-      body: payload,
-    });
-  },
-  rejectRequest(requestId, payload = {}) {
-    return adminApiRequest(`/mentoring-requests/${encodeURIComponent(requestId)}/reject`, {
-      method: "PATCH",
-      body: payload,
-    });
-  },
-};
 
 export const adminSkillsApi = {
   listCategories(params = {}) {

@@ -1,6 +1,7 @@
 export const mySessionTabs = [
   { key: "upcoming", label: "Upcoming" },
   { key: "pending", label: "Pending" },
+  { key: "awaiting", label: "To Confirm" },
   { key: "completed", label: "Completed" },
   { key: "cancelled", label: "Cancelled" },
 ];
@@ -24,6 +25,11 @@ const sessionStatusMap = {
   PENDING: {
     tabKey: "pending",
     badge: "Pending",
+  },
+  // Teacher marked done; learner must confirm before credits transfer.
+  AWAITING_CONFIRMATION: {
+    tabKey: "awaiting",
+    badge: "Awaiting Your Confirmation",
   },
   COMPLETED: {
     tabKey: "completed",
@@ -214,6 +220,13 @@ export function mapOwnedSession(session, viewerUserId) {
     description,
     canCancel: isLearner && normalizedStatus === "PENDING",
     canDelete: normalizedStatus !== "COMPLETED",
+    // Teacher marks the session done; triggers AWAITING_CONFIRMATION state.
+    canComplete: isTeacher && normalizedStatus === "ACCEPTED" && !session.teacherCompleted,
+    // Learner confirms once teacher has marked the session complete.
+    canConfirm: isLearner && normalizedStatus === "AWAITING_CONFIRMATION" && !session.learnerConfirmed,
+    creditFormula: session.creditFormula || "",
+    skillTierMultiplier: session.skillTierMultiplier ?? 1.0,
+    trustModifier: session.trustModifier ?? 1.0,
   };
 }
 

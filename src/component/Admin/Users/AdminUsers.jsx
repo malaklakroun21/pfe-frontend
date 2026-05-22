@@ -192,7 +192,7 @@ function EditUserPanel({ user, onClose, onSaved }) {
   return (
     <div className="admin-permissions-panel">
       <div className="admin-permissions-panel__header">
-        <strong>Modifier - {user.userId}</strong>
+        <strong>Modifier - {[user.firstName, user.lastName].filter(Boolean).join(" ") || user.userId}</strong>
         <button type="button" className="admin-button admin-button--ghost" onClick={onClose}>
           Fermer
         </button>
@@ -503,7 +503,7 @@ function AdminUsers() {
                         <strong>
                           {[user.firstName, user.lastName].filter(Boolean).join(" ") || "-"}
                         </strong>
-                        <div className="admin-muted">{user.userId}</div>
+                        <div className="admin-muted">{user.email || user.userId}</div>
                       </td>
                       <td>{user.email || "-"}</td>
                       <td>{user.role || "-"}</td>

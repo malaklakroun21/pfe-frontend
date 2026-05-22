@@ -165,8 +165,8 @@ function AdminAudit() {
                       <td>
                         <strong>{entry.actionType || "—"}</strong>
                       </td>
-                      <td>{entry.adminUserId || "—"}</td>
-                      <td>{entry.userId || "—"}</td>
+                      <td>{entry.adminName || entry.adminUserId || "—"}</td>
+                      <td>{entry.targetUserName || entry.userId || "—"}</td>
                       <td>
                         {entry.targetEntityType || "—"}{" "}
                         <span className="admin-muted">{entry.targetEntityId ? `(${entry.targetEntityId})` : ""}</span>

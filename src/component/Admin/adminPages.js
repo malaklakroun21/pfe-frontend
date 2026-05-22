@@ -1,4 +1,4 @@
-export const adminSectionKeys = ["dashboard", "users", "reports", "audit", "settings", "skills", "mentor-applications", "mentoring-requests"];
+export const adminSectionKeys = ["dashboard", "users", "reports", "audit", "settings", "skills", "mentor-applications"];
 
 export const adminSections = {
   dashboard: {
@@ -42,12 +42,6 @@ export const adminSections = {
     route: "/admin/mentor-applications",
     navLabel: "Mentor Applications",
     icon: "profile",
-  },
-  "mentoring-requests": {
-    key: "mentoring-requests",
-    route: "/admin/mentoring-requests",
-    navLabel: "Mentoring Requests",
-    icon: "validation",
   },
 };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { validationApi } from "../../../api/client.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 
@@ -180,7 +181,18 @@ export default function MentorValidationInbox() {
             <div key={request.requestId} className="validation-page__mentor-request">
               <div className="validation-page__mentor-request-head">
                 <div>
-                  <strong>{request.learner?.fullName}</strong>
+                  <strong>
+                    {request.learner?.userId ? (
+                      <Link
+                        to={`/app/profile/${encodeURIComponent(request.learner.userId)}`}
+                        style={{ color: "inherit", textDecoration: "underline", cursor: "pointer" }}
+                      >
+                        {request.learner.fullName}
+                      </Link>
+                    ) : (
+                      request.learner?.fullName
+                    )}
+                  </strong>
                   <span>{request.skill?.name}</span>
                 </div>
                 <span

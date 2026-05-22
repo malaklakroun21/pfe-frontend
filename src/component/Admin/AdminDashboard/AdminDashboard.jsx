@@ -162,7 +162,7 @@ function AdminDashboard() {
                           <td>
                             <strong>{entry.actionType || "--"}</strong>
                           </td>
-                          <td className="admin-muted">{entry.adminUserId || "--"}</td>
+                          <td className="admin-muted">{entry.adminName || entry.adminUserId || "--"}</td>
                           <td className="admin-muted">
                             {entry.targetEntityType || "--"}
                             {entry.targetEntityId ? ` (${entry.targetEntityId})` : ""}

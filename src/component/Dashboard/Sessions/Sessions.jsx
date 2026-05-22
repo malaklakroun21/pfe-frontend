@@ -371,7 +371,7 @@ function Sessions() {
                   : `${visibleCategoryCards.length} categor${visibleCategoryCards.length === 1 ? "y" : "ies"}`}
               </p>
 
-              {canCreateSession ? (
+              {canCreateSession && String(user?.role || "").toLowerCase() !== "admin" ? (
                 <button
                   type="button"
                   className="sessions-page__create-button"
@@ -660,7 +660,7 @@ function Sessions() {
                                 </a>
                               ) : null}
 
-                              {!isOwner && !isCompleted && !hasAcceptedRequest ? (
+                              {!isOwner && !isCompleted && !hasAcceptedRequest && String(user?.role || "").toLowerCase() !== "admin" ? (
                                 <button
                                   type="button"
                                   className="sessions-page__join-button"

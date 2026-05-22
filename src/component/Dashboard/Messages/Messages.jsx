@@ -346,6 +346,73 @@ function Messages() {
     threadNode.scrollTop = threadNode.scrollHeight;
   }, [activeConversationId, activeThread?.messages?.length]);
 
+  // Poll active thread every 5 s for incoming messages.
+  useEffect(() => {
+    if (!activeConversationId || !user?.userId) return;
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const conversation = await messageApi.getConversationWithUser(activeConversationId);
+        const incoming = Array.isArray(conversation?.messages) ? conversation.messages : [];
+
+        const mappedMessages = incoming.map((message) => ({
+          id: message.messageId,
+          sender: message.senderId === user.userId ? "me" : "them",
+          body: message.content,
+          time: formatChatTime(message.createdAt),
+          isRead: message.isRead,
+          senderId: message.senderId,
+        }));
+
+        setActiveThread((current) => {
+          if (!current) return current;
+          const lastNew = mappedMessages[mappedMessages.length - 1]?.id;
+          const lastOld = current.messages[current.messages.length - 1]?.id;
+          if (lastNew === lastOld && mappedMessages.length === current.messages.length) return current;
+          return { ...current, messages: mappedMessages };
+        });
+
+        const unreadIncoming = incoming.filter(
+          (m) => m.senderId !== user.userId && !m.isRead,
+        );
+        if (unreadIncoming.length > 0) {
+          await Promise.all(unreadIncoming.map((m) => messageApi.markMessageAsRead(m.messageId)));
+          refreshNotifications();
+        }
+      } catch {
+        // silent — don't disrupt the user
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [activeConversationId, user?.userId]);
+
+  // Poll conversation list every 10 s for new conversations / updated previews.
+  useEffect(() => {
+    if (!user?.userId) return;
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const conversations = await messageApi.listConversations();
+        const mapped = (Array.isArray(conversations) ? conversations : []).map(mapConversationSummary);
+
+        setConversationItems((current) => {
+          const hasChange =
+            mapped.length !== current.length ||
+            mapped.some((next) => {
+              const existing = current.find((c) => c.id === next.id);
+              return !existing || existing.preview !== next.preview || existing.unread !== next.unread;
+            });
+          return hasChange ? mapped : current;
+        });
+      } catch {
+        // silent
+      }
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
+  }, [user?.userId]);
+
   const handleSelectConversation = (conversationId) => {
     setActiveConversationId(conversationId);
     setConversationItems((current) =>

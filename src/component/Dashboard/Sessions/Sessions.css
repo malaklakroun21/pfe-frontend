@@ -583,6 +583,13 @@
   font-weight: 500;
 }
 
+.sessions-page__formula {
+  font-size: 0.75rem;
+  color: #888;
+  font-family: monospace;
+  margin: 2px 0 0;
+}
+
 .sessions-page__empty {
   display: grid;
   place-items: center;

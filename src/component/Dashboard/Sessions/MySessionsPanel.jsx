@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sessionApi } from "../../../api/client.js";
+
 import { useAuthSession } from "../../../authSession.js";
 import { mapOwnedSession, mySessionTabs } from "./sessionViewModel.js";
 import "./Sessions.css";
@@ -57,6 +58,8 @@ function MySessionsPanel({ embedded = false }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isCancellingSessionId, setIsCancellingSessionId] = useState("");
+  const [isConfirmingSessionId, setIsConfirmingSessionId] = useState("");
+  const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -113,6 +116,54 @@ function MySessionsPanel({ embedded = false }) {
   );
 
   const filteredSessions = sessionItems.filter((item) => item.status === activeTab);
+
+  async function handleCompleteSession(sessionId) {
+    if (!sessionId || isCompletingSessionId) return;
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsCompletingSessionId(sessionId);
+
+    try {
+      await sessionApi.complete(sessionId);
+      setSessionItems((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, status: "awaiting", badge: "Awaiting Your Confirmation", canComplete: false }
+            : s,
+        ),
+      );
+      setStatusMessage("Session marked as complete. Waiting for learner confirmation.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsCompletingSessionId("");
+    }
+  }
+
+  async function handleConfirmSession(sessionId) {
+    if (!sessionId || isConfirmingSessionId) return;
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsConfirmingSessionId(sessionId);
+
+    try {
+      const updated = await sessionApi.confirm(sessionId);
+      setSessionItems((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, status: "completed", badge: "Completed", canConfirm: false }
+            : s,
+        ),
+      );
+      setStatusMessage("Session confirmed.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsConfirmingSessionId("");
+    }
+  }
 
   async function handleCancelSession(sessionId) {
     if (!sessionId || isCancellingSessionId) {
@@ -191,45 +242,67 @@ function MySessionsPanel({ embedded = false }) {
                       </div>
 
                       <div className="sessions-page__actions">
-                        <button
-                          type="button"
-                          className="sessions-page__action sessions-page__action--ghost"
-                          disabled={!session.canCancel || isCancellingSessionId === session.id}
-                          onClick={() => {
-                            if (session.canCancel) {
-                              handleCancelSession(session.id);
-                            }
-                          }}
-                        >
-                          {session.status === "completed"
-                            ? "Review"
-                            : isCancellingSessionId === session.id
-                              ? "Cancelling..."
-                              : "Cancel"}
-                        </button>
+                        {session.canComplete ? (
+                          <button
+                            type="button"
+                            className="sessions-page__action sessions-page__action--primary"
+                            disabled={isCompletingSessionId === session.id}
+                            onClick={() => handleCompleteSession(session.id)}
+                          >
+                            {isCompletingSessionId === session.id ? "Marking..." : "Mark as Complete"}
+                          </button>
+                        ) : session.canConfirm ? (
+                          <button
+                            type="button"
+                            className="sessions-page__action sessions-page__action--primary"
+                            disabled={isConfirmingSessionId === session.id}
+                            onClick={() => handleConfirmSession(session.id)}
+                          >
+                            {isConfirmingSessionId === session.id ? "Confirming..." : "Confirm"}
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--ghost"
+                              disabled={!session.canCancel || isCancellingSessionId === session.id}
+                              onClick={() => {
+                                if (session.canCancel) handleCancelSession(session.id);
+                              }}
+                            >
+                              {session.status === "completed"
+                                ? "Review"
+                                : isCancellingSessionId === session.id
+                                  ? "Cancelling..."
+                                  : "Cancel"}
+                            </button>
 
-                        <button
-                          type="button"
-                          className="sessions-page__action sessions-page__action--primary"
-                          onClick={() => {
-                            if (!session.participantUserId) {
-                              return;
-                            }
-
-                            if (session.status === "completed") {
-                              navigate(`/app/profile/${encodeURIComponent(session.participantUserId)}`);
-                              return;
-                            }
-
-                            navigate(`/app/messages?user=${encodeURIComponent(session.participantUserId)}`);
-                          }}
-                        >
-                          {session.status === "completed" ? "Book Again" : "Message"}
-                        </button>
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--primary"
+                              onClick={() => {
+                                if (!session.participantUserId) return;
+                                if (session.status === "completed") {
+                                  navigate(`/app/profile/${encodeURIComponent(session.participantUserId)}`);
+                                  return;
+                                }
+                                navigate(`/app/messages?user=${encodeURIComponent(session.participantUserId)}`);
+                              }}
+                            >
+                              {session.status === "completed" ? "Book Again" : "Message"}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <p>with {session.participantName}</p>
+
+                    {session.creditFormula ? (
+                      <p className="sessions-page__formula" title="Credits = T × S × M">
+                        {session.creditFormula}
+                      </p>
+                    ) : null}
 
                     <div className="sessions-page__meta">
                       <span className="sessions-page__meta-item">

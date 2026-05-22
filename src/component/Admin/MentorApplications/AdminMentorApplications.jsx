@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ViewFrame from "../../Dashboard/Layout/ViewFrame/ViewFrame.jsx";
 import AdminPageHeader from "../AdminPageHeader.jsx";
 import { mentorApplicationApi } from "../../../api/client.js";
 import "../adminUi.css";
 import "./AdminMentorApplications.css";
 
-function ProofModal({ app, onClose }) {
+function ProofModal({ app, onClose, onViewProfile }) {
   const applicantName =
     [app.applicant?.firstName, app.applicant?.lastName].filter(Boolean).join(" ") ||
     app.userId ||
@@ -29,13 +30,6 @@ function ProofModal({ app, onClose }) {
             <dt>Applied on</dt>
             <dd>{app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "—"}</dd>
           </div>
-
-          {app.applicant?.bio ? (
-            <div className="mentor-proof-modal__row mentor-proof-modal__row--full">
-              <dt>Bio</dt>
-              <dd>{app.applicant.bio}</dd>
-            </div>
-          ) : null}
 
           {app.applicant?.portfolioUrl ? (
             <div className="mentor-proof-modal__row">
@@ -77,12 +71,23 @@ function ProofModal({ app, onClose }) {
             </div>
           ) : null}
         </dl>
+
+        <div className="mentor-proof-modal__footer">
+          <button
+            type="button"
+            className="admin-button"
+            onClick={onViewProfile}
+          >
+            View Profile
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 function AdminMentorApplications() {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -293,7 +298,16 @@ function AdminMentorApplications() {
         )}
       </section>
 
-      {proofApp ? <ProofModal app={proofApp} onClose={() => setProofApp(null)} /> : null}
+      {proofApp ? (
+        <ProofModal
+          app={proofApp}
+          onClose={() => setProofApp(null)}
+          onViewProfile={() => {
+            setProofApp(null);
+            navigate(`/app/profile/${proofApp.userId}`);
+          }}
+        />
+      ) : null}
     </ViewFrame>
   );
 }

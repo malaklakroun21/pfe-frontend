@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { dashboardApi, mentoringRequestApi } from "../../../api/client.js";
+import { dashboardApi, mentorApplicationApi } from "../../../api/client.js";
 import { useAuthSession } from "../../../authSession.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import MentorValidationInbox from "./MentorValidationInbox.jsx";
@@ -423,9 +423,6 @@ function LearnerSkillStatuses({ skills = [] }) {
 
 function MentoringRequestForm({ validatedSkills }) {
   const [selectedSkillId, setSelectedSkillId] = useState("");
-  const [portfolioLink, setPortfolioLink] = useState("");
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [requestNote, setRequestNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -434,21 +431,13 @@ function MentoringRequestForm({ validatedSkills }) {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-
     setSubmitError("");
     setIsSubmitting(true);
-
     try {
-      const formData = new FormData();
-      formData.append("skillId", selectedSkillId);
-      if (portfolioLink.trim()) formData.append("portfolioLink", portfolioLink.trim());
-      if (requestNote.trim()) formData.append("requestNote", requestNote.trim());
-      if (uploadedFile) formData.append("proofFile", uploadedFile);
-
-      await mentoringRequestApi.submit(formData);
+      await mentorApplicationApi.submit({ skillId: selectedSkillId });
       setIsSubmitted(true);
     } catch (error) {
-      setSubmitError(error.message || "Unable to submit mentoring request.");
+      setSubmitError(error.message || "Unable to submit application.");
     } finally {
       setIsSubmitting(false);
     }
@@ -480,48 +469,13 @@ function MentoringRequestForm({ validatedSkills }) {
             onChange={(val) => setSelectedSkillId(val)}
           />
         </label>
-
-        <label className="validation-page__wizard-field">
-          <span>Portfolio link (optional)</span>
-          <input
-            type="url"
-            placeholder="https://example.com/portfolio"
-            value={portfolioLink}
-            onChange={(e) => setPortfolioLink(e.target.value)}
-          />
-        </label>
-
-        <div className="validation-page__wizard-field">
-          <span>Upload a file (optional)</span>
-          <label className="validation-page__file-upload">
-            <span className="validation-page__file-text">
-              {uploadedFile ? uploadedFile.name : "No file chosen"}
-            </span>
-            <span className="validation-page__file-btn">Choose file</span>
-            <input
-              type="file"
-              style={{ display: "none" }}
-              onChange={(e) => setUploadedFile(e.target.files[0] || null)}
-            />
-          </label>
-        </div>
-
-        <label className="validation-page__wizard-field validation-page__wizard-field--submit">
-          <span>Note to admin (optional)</span>
-          <textarea
-            rows="4"
-            placeholder="Explain why you want to become a mentor for this skill..."
-            value={requestNote}
-            onChange={(e) => setRequestNote(e.target.value)}
-          />
-        </label>
       </div>
 
       <div className="validation-page__wizard-footer">
         {submitError ? <p style={{ color: "var(--color-error, #e05)" }}>{submitError}</p> : null}
         {isSubmitted ? (
           <p style={{ color: "var(--color-success, #0a0)" }}>
-            Request submitted. An admin will review it shortly.
+            Application submitted. An admin will review it shortly.
           </p>
         ) : null}
 
@@ -531,7 +485,7 @@ function MentoringRequestForm({ validatedSkills }) {
           onClick={handleSubmit}
           disabled={!canSubmit}
         >
-          {isSubmitting ? "Sending..." : isSubmitted ? "Request sent" : "Submit Request"}
+          {isSubmitting ? "Sending..." : isSubmitted ? "Application sent" : "Apply for Mentor Status"}
         </button>
       </div>
     </article>

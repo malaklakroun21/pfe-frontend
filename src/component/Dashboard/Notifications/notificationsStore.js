@@ -7,7 +7,7 @@ import {
 } from "../../../authSession.js";
 
 const listeners = new Set();
-const POLLING_INTERVAL_MS = 15000;
+const POLLING_INTERVAL_MS = 10000;
 
 let notificationsSnapshot = {
   notifications: [],

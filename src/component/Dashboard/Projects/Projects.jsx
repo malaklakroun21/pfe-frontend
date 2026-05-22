@@ -557,16 +557,18 @@ function Projects() {
                   : `${categoryCards.length} categor${categoryCards.length === 1 ? "y" : "ies"}`}
               </p>
 
-              <button
-                type="button"
-                className="projects-page__create-button"
-                onClick={() => {
-                  setCreateForm({ ...EMPTY_PROJECT_FORM, categoryId: categoryId || "" });
-                  setIsCreateFormOpen(true);
-                }}
-              >
-                Create Project
-              </button>
+              {String(user?.role || "").toLowerCase() !== "admin" ? (
+                <button
+                  type="button"
+                  className="projects-page__create-button"
+                  onClick={() => {
+                    setCreateForm({ ...EMPTY_PROJECT_FORM, categoryId: categoryId || "" });
+                    setIsCreateFormOpen(true);
+                  }}
+                >
+                  Create Project
+                </button>
+              ) : null}
             </div>
 
           </div>
@@ -757,7 +759,7 @@ function Projects() {
                               : "No description yet."}
                           </span>
 
-                          {isOwner ? (
+                          {String(user?.role || "").toLowerCase() === "admin" ? null : isOwner ? (
                             <Link
                               to={`/app/projects/${encodeURIComponent(project.projectId)}`}
                               className="projects-page__join-button projects-page__join-button--link"
@@ -889,7 +891,7 @@ function Projects() {
                                   <div className="projects-page__member-main">
                                     <span className="projects-page__member-avatar"><PeopleIcon /></span>
                                     <div>
-                                      <strong>{request.userId}</strong>
+                                      <strong>{request.displayName || request.userId}</strong>
                                       <span>Requested {formatDateTimeLabel(request.requestedAt)}</span>
                                     </div>
                                   </div>
@@ -919,7 +921,11 @@ function Projects() {
                                   <div className="projects-page__member-main">
                                     <span className="projects-page__member-avatar"><PeopleIcon /></span>
                                     <div>
-                                      <strong>{member.userId}</strong>
+                                      <strong>
+                                        <Link to={`/app/profile/${encodeURIComponent(member.userId)}`} style={{ color: "inherit", textDecoration: "underline" }}>
+                                          {member.displayName || member.userId}
+                                        </Link>
+                                      </strong>
                                       <span>Joined {formatDateTimeLabel(member.joinedAt)}</span>
                                     </div>
                                   </div>

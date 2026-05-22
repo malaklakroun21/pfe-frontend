@@ -93,3 +93,9 @@
 .mentor-proof-modal__body a:hover {
   text-decoration: underline;
 }
+
+.mentor-proof-modal__footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}

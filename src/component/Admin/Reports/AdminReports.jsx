@@ -192,7 +192,7 @@ function AdminReports() {
                       <td>
                         <strong>{report.reportId || "-"}</strong>
                         <div className="admin-muted">
-                          Target: {report.reportedUserId || "-"} | Created:{" "}
+                          Target: {report.reportedUserName || report.reportedUserId || "-"} | Created:{" "}
                           {report.createdAt ? new Date(report.createdAt).toLocaleString() : "-"}
                         </div>
                       </td>

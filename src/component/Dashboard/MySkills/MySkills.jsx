@@ -21,14 +21,6 @@ const EMPTY_PROJECT_FORM = {
   description: "",
 };
 
-const EMPTY_SESSION_FORM = {
-  teacherId: "",
-  skill: "",
-  categoryId: "",
-  duration: "1",
-  date: "",
-  message: "",
-};
 
 function LocationIcon() {
   return (
@@ -178,6 +170,16 @@ function buildPublicLocationLabel(profile = {}) {
 }
 
 function buildPublicSkills(profile = {}) {
+  if (Array.isArray(profile.validatedSkills) && profile.validatedSkills.length > 0) {
+    return profile.validatedSkills.map((s) => ({
+      id: s.skillId || `${profile.userId}-${s.skillName}`,
+      name: s.skillName,
+      proficiency: `Score ${s.validationScore}/100`,
+      validationState: "validated",
+      showAction: false,
+    }));
+  }
+
   const publicSkills = uniqueStrings(
     Array.isArray(profile.offeredSkills) && profile.offeredSkills.length > 0
       ? profile.offeredSkills
@@ -413,174 +415,18 @@ function ReviewsTab({ profile }) {
 
 function SessionsTab({
   profile,
-  isCreateFormOpen,
-  onOpenCreateForm,
-  createSessionForm,
-  onChangeCreateSessionField,
-  onSubmitCreateSession,
-  onCancelCreateSession,
-  isCreatingSession,
-  createSessionError,
   sessionActionError,
   onOpenSession,
   selectedSession,
   onCloseSession,
   onDeleteSession,
   isDeletingSessionId,
-  teacherOptions = [],
-  categoryOptions = [],
 }) {
-  const [teacherSearch, setTeacherSearch] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const filteredTeachers = teacherSearch.trim()
-    ? teacherOptions.filter((t) =>
-        t.label.toLowerCase().startsWith(teacherSearch.trim().toLowerCase())
-      )
-    : teacherOptions;
-
-  const selectedTeacherName =
-    teacherOptions.find((t) => t.value === createSessionForm.teacherId)?.label ?? "";
-
   return (
     <>
       {sessionActionError ? (
         <article className="my-profile-page__content-card my-profile-page__status-card">
           <p className="my-profile-page__error-message">{sessionActionError}</p>
-        </article>
-      ) : null}
-
-      {isCreateFormOpen ? (
-        <article className="my-profile-page__content-card my-profile-page__session-create-card">
-          <div className="my-profile-page__session-create-head">
-            <div>
-              <p className="my-profile-page__content-eyebrow">New session</p>
-              <h3>Create a session request</h3>
-            </div>
-          </div>
-
-          {createSessionError ? (
-            <p className="my-profile-page__error-message">{createSessionError}</p>
-          ) : null}
-
-          <form className="my-profile-page__session-form" onSubmit={onSubmitCreateSession}>
-            <div className="my-profile-page__session-form-grid">
-              <div className="my-profile-page__session-field">
-                <span>Teacher</span>
-                <div className="my-profile-page__teacher-search">
-                  <input
-                    type="text"
-                    placeholder="Search by name..."
-                    value={createSessionForm.teacherId ? selectedTeacherName : teacherSearch}
-                    onChange={(event) => {
-                      setTeacherSearch(event.target.value);
-                      setShowSuggestions(true);
-                      if (createSessionForm.teacherId) {
-                        onChangeCreateSessionField("teacherId", "");
-                      }
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                    autoComplete="off"
-                  />
-                  {showSuggestions && filteredTeachers.length > 0 && (
-                    <ul className="my-profile-page__teacher-suggestions">
-                      {filteredTeachers.map((t) => (
-                        <li
-                          key={t.value}
-                          onMouseDown={() => {
-                            onChangeCreateSessionField("teacherId", t.value);
-                            setTeacherSearch("");
-                            setShowSuggestions(false);
-                          }}
-                        >
-                          {t.label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-
-              <label className="my-profile-page__session-field">
-                <span>Skill</span>
-                <input
-                  type="text"
-                  minLength={2}
-                  value={createSessionForm.skill}
-                  onChange={(event) => onChangeCreateSessionField("skill", event.target.value)}
-                  placeholder="e.g. React"
-                  required
-                />
-              </label>
-
-              <label className="my-profile-page__session-field">
-                <span>Category</span>
-                <select
-                  value={createSessionForm.categoryId}
-                  onChange={(event) => onChangeCreateSessionField("categoryId", event.target.value)}
-                >
-                  <option value="">— No category —</option>
-                  {categoryOptions.map((cat) => (
-                    <option key={cat.categoryId} value={cat.categoryId}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="my-profile-page__session-field">
-                <span>Duration</span>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={createSessionForm.duration}
-                  onChange={(event) => onChangeCreateSessionField("duration", event.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="my-profile-page__session-field">
-                <span>Date</span>
-                <input
-                  type="datetime-local"
-                  value={createSessionForm.date}
-                  onChange={(event) => onChangeCreateSessionField("date", event.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="my-profile-page__session-field my-profile-page__session-field--full">
-                <span>Message</span>
-                <textarea
-                  rows="5"
-                  value={createSessionForm.message}
-                  onChange={(event) => onChangeCreateSessionField("message", event.target.value)}
-                  placeholder="Describe what you want to learn in this session."
-                />
-              </label>
-            </div>
-
-            <div className="my-profile-page__session-form-actions">
-              <button
-                type="button"
-                className="my-profile-page__activity-button my-profile-page__activity-button--ghost"
-                onClick={onCancelCreateSession}
-                disabled={isCreatingSession}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="my-profile-page__activity-button my-profile-page__activity-button--primary"
-                disabled={isCreatingSession}
-              >
-                {isCreatingSession ? "Creating..." : "Create Session"}
-              </button>
-            </div>
-          </form>
         </article>
       ) : null}
 
@@ -614,7 +460,7 @@ function SessionsTab({
         </article>
       ) : null}
 
-      {profile.sessions.length === 0 && !isCreateFormOpen ? (
+      {profile.sessions.length === 0 ? (
         <article className="my-profile-page__content-card my-profile-page__empty-state-card">
           <h3>Sessions</h3>
           <p>No sessions created yet.</p>
@@ -814,7 +660,7 @@ function ProjectsTab({
               <div className="my-profile-page__project-member-list">
                 {selectedProject.joinRequests.map((request) => (
                   <div key={request.userId} className="my-profile-page__project-member-item">
-                    <strong>{request.userId}</strong>
+                    <strong>{request.displayName || request.userId}</strong>
                     <span>Requested {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString() : "Unknown"}</span>
                   </div>
                 ))}
@@ -874,7 +720,7 @@ function ProjectsTab({
               <div className="my-profile-page__project-member-list">
                 {project.members.map((member) => (
                   <div key={member.id} className="my-profile-page__project-member-item">
-                    <strong>{member.userId}</strong>
+                    <strong>{member.displayName || member.userId}</strong>
                     <span>Joined {member.joinedLabel}</span>
                   </div>
                 ))}
@@ -915,14 +761,6 @@ function ProfileContent({
   profile,
   activeTabKey,
   isOwnProfile,
-  isSessionCreateFormOpen,
-  onOpenSessionCreateForm,
-  createSessionForm,
-  onChangeCreateSessionField,
-  onSubmitCreateSession,
-  onCancelCreateSession,
-  isCreatingSession,
-  createSessionError,
   sessionActionError,
   onOpenSession,
   selectedSession,
@@ -944,8 +782,6 @@ function ProfileContent({
   isLoadingProjectDetail,
   projectDetailError,
   onCloseProject,
-  teacherOptions = [],
-  sessionCategories = [],
 }) {
   switch (activeTabKey) {
     case "skills":
@@ -958,22 +794,12 @@ function ProfileContent({
       return isOwnProfile ? (
         <SessionsTab
           profile={profile}
-          isCreateFormOpen={isSessionCreateFormOpen}
-          onOpenCreateForm={onOpenSessionCreateForm}
-          createSessionForm={createSessionForm}
-          onChangeCreateSessionField={onChangeCreateSessionField}
-          onSubmitCreateSession={onSubmitCreateSession}
-          onCancelCreateSession={onCancelCreateSession}
-          isCreatingSession={isCreatingSession}
-          createSessionError={createSessionError}
           sessionActionError={sessionActionError}
           onOpenSession={onOpenSession}
           selectedSession={selectedSession}
           onCloseSession={onCloseSession}
           onDeleteSession={onDeleteSession}
           isDeletingSessionId={isDeletingSessionId}
-          teacherOptions={teacherOptions}
-          categoryOptions={sessionCategories}
         />
       ) : null;
     case "projects":
@@ -1011,11 +837,6 @@ function MyProfile() {
   const [profileRecord, setProfileRecord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [createSessionForm, setCreateSessionForm] = useState(EMPTY_SESSION_FORM);
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [createSessionError, setCreateSessionError] = useState("");
-  const [teacherOptions, setTeacherOptions] = useState([]);
-  const [sessionCategories, setSessionCategories] = useState([]);
   const [sessionActionError, setSessionActionError] = useState("");
   const [selectedSession, setSelectedSession] = useState(null);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState("");
@@ -1096,7 +917,8 @@ function MyProfile() {
   }, [userId, user?.userId]);
 
   const isOwnProfile = !userId;
-  const activeProfile = buildProfileViewModel(profileRecord, { isOwnProfile });
+  const isAdmin = String(user?.role || "").toLowerCase() === "admin";
+  const activeProfile = buildProfileViewModel(profileRecord, { isOwnProfile, isAdmin: isAdmin && !isOwnProfile });
 
   if (isLoading) {
     return <p>Loading profile...</p>;
@@ -1110,13 +932,14 @@ function MyProfile() {
     return null;
   }
 
-  const visibleTabs = activeProfile.tabs;
+  const ADMIN_HIDDEN_TABS = new Set(["skills", "portfolio", "reviews", "sessions", "projects"]);
+  const visibleTabs = isAdmin && isOwnProfile
+    ? activeProfile.tabs.filter((tab) => !ADMIN_HIDDEN_TABS.has(tab.key))
+    : activeProfile.tabs;
   const requestedTabKey = searchParams.get("tab") || "about";
   const currentTabKey = visibleTabs.some((tab) => tab.key === requestedTabKey)
     ? requestedTabKey
     : visibleTabs[0]?.key ?? "about";
-  const isSessionCreateFormOpen =
-    isOwnProfile && currentTabKey === "sessions" && searchParams.get("createSession") === "1";
   const isProjectCreateFormOpen =
     isOwnProfile && currentTabKey === "projects" && searchParams.get("create") === "1";
 
@@ -1127,30 +950,6 @@ function MyProfile() {
 
   function handleMessageProfileOwner() {
     navigate(`/app/messages?user=${encodeURIComponent(activeProfile.id)}`);
-  }
-
-  async function handleCreateSession() {
-    setSelectedSession(null);
-    setCreateSessionError("");
-    setSessionActionError("");
-
-    if (teacherOptions.length === 0) {
-      sessionApi.getTeacherDirectory().then((data) => {
-        const options = (Array.isArray(data) ? data : []).map((t) => ({ value: t.id, label: t.name }));
-        setTeacherOptions(options);
-      }).catch(() => {});
-    }
-
-    if (sessionCategories.length === 0) {
-      projectApi.listCategories().then((data) => {
-        setSessionCategories(Array.isArray(data) ? data : []);
-      }).catch(() => {});
-    }
-
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.set("tab", "sessions");
-    nextSearchParams.set("createSession", "1");
-    setSearchParams(nextSearchParams, { replace: true });
   }
 
   function handleCreateProject() {
@@ -1229,86 +1028,6 @@ function MyProfile() {
     }
   }
 
-  function handleChangeCreateSessionField(field, value) {
-    setCreateSessionError("");
-    setSessionActionError("");
-    setCreateSessionForm((currentForm) => ({
-      ...currentForm,
-      [field]: value,
-    }));
-  }
-
-  function handleCancelCreateSession() {
-    setCreateSessionForm(EMPTY_SESSION_FORM);
-    setCreateSessionError("");
-    setSessionActionError("");
-
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.set("tab", "sessions");
-    nextSearchParams.delete("createSession");
-    setSearchParams(nextSearchParams, { replace: true });
-  }
-
-  async function reloadOwnSessions() {
-    const sessions = await sessionApi.list({ role: 'LEARNER' });
-
-    setProfileRecord((currentProfile) => {
-      if (!currentProfile) {
-        return currentProfile;
-      }
-
-      return {
-        ...currentProfile,
-        sessions: Array.isArray(sessions) ? sessions : [],
-      };
-    });
-  }
-
-  async function handleSubmitCreateSession(event) {
-    event.preventDefault();
-
-    if (isCreatingSession) {
-      return;
-    }
-
-    setCreateSessionError("");
-    setSessionActionError("");
-    setIsCreatingSession(true);
-
-    try {
-      const parsedDate = new Date(createSessionForm.date);
-
-      if (!createSessionForm.teacherId.trim()) {
-        throw new Error("Please select a teacher.");
-      }
-
-      if (Number.isNaN(parsedDate.getTime())) {
-        throw new Error("Please choose a valid date and time.");
-      }
-
-      await sessionApi.request({
-        teacherId: createSessionForm.teacherId.trim(),
-        skill: createSessionForm.skill.trim(),
-        categoryId: createSessionForm.categoryId || '',
-        duration: Number(createSessionForm.duration),
-        date: parsedDate.toISOString(),
-        message: createSessionForm.message.trim(),
-      });
-
-      await reloadOwnSessions();
-      setCreateSessionForm(EMPTY_SESSION_FORM);
-
-      const nextSearchParams = new URLSearchParams(searchParams);
-      nextSearchParams.set("tab", "sessions");
-      nextSearchParams.delete("createSession");
-      setSearchParams(nextSearchParams, { replace: true });
-    } catch (error) {
-      setCreateSessionError(error.message);
-    } finally {
-      setIsCreatingSession(false);
-    }
-  }
-
   function handleOpenSession(sessionId) {
     const session = activeProfile.sessions.find((currentSession) => currentSession.id === sessionId) || null;
     setSelectedSession(session);
@@ -1318,6 +1037,14 @@ function MyProfile() {
   function handleCloseSession() {
     setSelectedSession(null);
     setSessionActionError("");
+  }
+
+  async function reloadOwnSessions() {
+    const sessions = await sessionApi.list({ role: 'LEARNER' });
+    setProfileRecord((currentProfile) => {
+      if (!currentProfile) return currentProfile;
+      return { ...currentProfile, sessions: Array.isArray(sessions) ? sessions : [] };
+    });
   }
 
   async function handleDeleteSession(sessionId) {
@@ -1497,13 +1224,13 @@ function MyProfile() {
           )}
         </div>
 
-        {activeProfile.showCredits ? (
+        {!(isAdmin && isOwnProfile) && activeProfile.showCredits ? (
           <div className="my-profile-page__credits">
             Credits: <strong>{activeProfile.creditsLabel}</strong>
           </div>
         ) : null}
 
-        {activeProfile.xp ? (
+        {!(isAdmin && isOwnProfile) && activeProfile.xp ? (
           <LevelCard xpProfile={activeProfile.xp} showHistory={isOwnProfile} />
         ) : null}
       </section>
@@ -1562,14 +1289,6 @@ function MyProfile() {
           profile={activeProfile}
           activeTabKey={currentTabKey}
           isOwnProfile={isOwnProfile}
-          isSessionCreateFormOpen={isSessionCreateFormOpen}
-          onOpenSessionCreateForm={handleCreateSession}
-          createSessionForm={createSessionForm}
-          onChangeCreateSessionField={handleChangeCreateSessionField}
-          onSubmitCreateSession={handleSubmitCreateSession}
-          onCancelCreateSession={handleCancelCreateSession}
-          isCreatingSession={isCreatingSession}
-          createSessionError={createSessionError}
           sessionActionError={sessionActionError}
           onOpenSession={handleOpenSession}
           selectedSession={selectedSession}
@@ -1591,8 +1310,6 @@ function MyProfile() {
           isLoadingProjectDetail={isLoadingProjectDetail}
           projectDetailError={projectDetailError}
           onCloseProject={handleCloseProject}
-          teacherOptions={teacherOptions}
-          sessionCategories={sessionCategories}
         />
       </section>
     </div>

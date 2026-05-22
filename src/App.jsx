@@ -44,7 +44,6 @@ import AdminAudit from './component/Admin/Audit/AdminAudit.jsx'
 import AdminSettings from './component/Admin/Settings/AdminSettings.jsx'
 import AdminSkills from './component/Admin/Skills/AdminSkills.jsx'
 import AdminMentorApplications from './component/Admin/MentorApplications/AdminMentorApplications.jsx'
-import AdminMentoringRequests from './component/Admin/MentoringRequests/AdminMentoringRequests.jsx'
 
 function LandingPage() {
   return (
@@ -377,6 +376,14 @@ function ProtectedAppRoute() {
   return <DashboardLayout />
 }
 
+function AdminDashboardHomeRedirect() {
+  const user = getAuthUser()
+  if (String(user?.role || "").toLowerCase() === "admin") {
+    return <Navigate to="/admin" replace />
+  }
+  return <DashboardHome />
+}
+
 function ProtectedAdminRoute() {
   if (!hasAuthSession()) {
     return <Navigate to="/login" replace />
@@ -436,7 +443,7 @@ const App = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register-admin" element={<AdminRegisterPage />} />
       <Route path="/app" element={<ProtectedAppRoute />}>
-        <Route index element={<DashboardHome />} />
+        <Route index element={<AdminDashboardHomeRedirect />} />
         <Route element={<SharedHeaderLayout />}>
           <Route path="skills" element={<MyProfile />} />
           <Route path="profile/:userId" element={<MyProfile />} />
@@ -461,7 +468,6 @@ const App = () => {
         <Route path="settings" element={<AdminSettings />} />
         <Route path="skills" element={<AdminSkills />} />
         <Route path="mentor-applications" element={<AdminMentorApplications />} />
-        <Route path="mentoring-requests" element={<AdminMentoringRequests />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

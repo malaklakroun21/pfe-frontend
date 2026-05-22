@@ -35,6 +35,7 @@ export function buildProfileViewModel(profileRecord, options = {}) {
   }
 
   const isOwnProfile = options.isOwnProfile ?? false;
+  const isAdmin = options.isAdmin ?? false;
   const skills = Array.isArray(profileRecord.skills)
     ? profileRecord.skills.map(buildSkillViewModel)
     : [];
@@ -84,7 +85,7 @@ export function buildProfileViewModel(profileRecord, options = {}) {
     reviews,
     sessions,
     projects,
-    tabs: PROFILE_TABS.filter((tab) => !tab.ownOnly || isOwnProfile).filter((tab) =>
+    tabs: PROFILE_TABS.filter((tab) => !tab.ownOnly || isOwnProfile || isAdmin).filter((tab) =>
       hasSectionContent(
         tab.key,
         {
@@ -95,7 +96,7 @@ export function buildProfileViewModel(profileRecord, options = {}) {
           sessions,
           projects,
         },
-        { isOwnProfile },
+        { isOwnProfile, isAdmin },
       ),
     ),
     avatarTheme: {
@@ -211,9 +212,9 @@ function hasSectionContent(sectionKey, { skills, portfolio }, options = {}) {
     case "reviews":
       return true;
     case "sessions":
-      return options.isOwnProfile;
+      return options.isOwnProfile || options.isAdmin;
     case "projects":
-      return options.isOwnProfile;
+      return options.isOwnProfile || options.isAdmin;
     default:
       return false;
   }
