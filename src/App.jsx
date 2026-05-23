@@ -63,6 +63,15 @@ function LandingPage() {
   )
 }
 
+function validatePassword(password) {
+  if (password.length < 8) return "Le mot de passe doit contenir au moins 8 caractères."
+  if (!/[A-Z]/.test(password)) return "Le mot de passe doit contenir au moins une lettre majuscule."
+  if (!/[a-z]/.test(password)) return "Le mot de passe doit contenir au moins une lettre minuscule."
+  if (!/[0-9]/.test(password)) return "Le mot de passe doit contenir au moins un chiffre."
+  if (!/[^A-Za-z0-9]/.test(password)) return "Le mot de passe doit contenir au moins un caractère spécial."
+  return null
+}
+
 function splitFullName(fullName = "") {
   const normalizedName = fullName.trim().replace(/\s+/g, " ");
   const [firstName = "", ...rest] = normalizedName.split(" ");
@@ -156,6 +165,12 @@ function SignupPage() {
 
     if (password !== confirmPassword) {
       setErrorMessage("Les mots de passe ne correspondent pas.")
+      return
+    }
+
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setErrorMessage(passwordError)
       return
     }
 
@@ -279,18 +294,9 @@ function ResetPasswordPage() {
       return
     }
 
-    if (password.length < 8) {
-      setErrorMessage("Password must be at least 8 characters long.")
-      return
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      setErrorMessage("Password must contain at least one uppercase letter.")
-      return
-    }
-
-    if (!/[0-9]/.test(password)) {
-      setErrorMessage("Password must contain at least one number.")
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setErrorMessage(passwordError)
       return
     }
 
