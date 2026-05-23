@@ -44,6 +44,8 @@ import AdminAudit from './component/Admin/Audit/AdminAudit.jsx'
 import AdminSettings from './component/Admin/Settings/AdminSettings.jsx'
 import AdminSkills from './component/Admin/Skills/AdminSkills.jsx'
 import AdminMentorApplications from './component/Admin/MentorApplications/AdminMentorApplications.jsx'
+import MentorInbox from './component/Dashboard/Validation/MentorInbox.jsx'
+import MySessionsPage from './component/Dashboard/Sessions/MySessionsPage.jsx'
 
 function LandingPage() {
   return (
@@ -457,6 +459,8 @@ const App = () => {
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:projectId" element={<Projects />} />
         <Route path="messages" element={<Messages />} />
+        <Route path="mentor-inbox" element={<MentorInbox />} />
+        <Route path="my-sessions" element={<MySessionsPage />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="*" element={<Navigate to="/app" replace />} />
       </Route>

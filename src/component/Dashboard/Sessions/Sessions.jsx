@@ -67,10 +67,21 @@ const EMPTY_CREATE_FORM = {
   title: "",
   description: "",
   categoryId: "",
+  duration: "1",
   date: "",
-  sessionCredits: "1",
   googleMeetLink: "",
 };
+
+const DURATION_OPTIONS = [
+  { value: "0.5", label: "30 min" },
+  { value: "1", label: "1 hour" },
+  { value: "1.5", label: "1 h 30" },
+  { value: "2", label: "2 hours" },
+  { value: "2.5", label: "2 h 30" },
+  { value: "3", label: "3 hours" },
+  { value: "3.5", label: "3 h 30" },
+  { value: "4", label: "4 hours" },
+];
 
 function Sessions() {
   const { categoryKey: categoryId = "" } = useParams();
@@ -91,12 +102,16 @@ function Sessions() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [createFormError, setCreateFormError] = useState("");
   const [canCreateSession, setCanCreateSession] = useState(false);
+  const [allowedCategoryIds, setAllowedCategoryIds] = useState([]);
 
   // Check if current user is allowed to host sessions
   useEffect(() => {
     let isActive = true;
     sessionApi.canHost().then((result) => {
-      if (isActive) setCanCreateSession(Boolean(result?.canHost));
+      if (isActive) {
+        setCanCreateSession(Boolean(result?.canHost));
+        setAllowedCategoryIds(Array.isArray(result?.allowedCategoryIds) ? result.allowedCategoryIds : []);
+      }
     }).catch(() => {});
     return () => { isActive = false; };
   }, [user?.userId]);
@@ -264,6 +279,11 @@ function Sessions() {
     event.preventDefault();
     if (isCreatingSession) return;
 
+    if (!createForm.categoryId) {
+      setCreateFormError("Please select a category.");
+      return;
+    }
+
     const parsedDate = new Date(createForm.date);
     if (Number.isNaN(parsedDate.getTime())) {
       setCreateFormError("Please choose a valid date and time.");
@@ -278,8 +298,8 @@ function Sessions() {
         title: createForm.title.trim(),
         description: createForm.description.trim(),
         categoryId: createForm.categoryId || "",
+        duration: parseFloat(createForm.duration) || 1,
         date: parsedDate.toISOString(),
-        sessionCredits: Number(createForm.sessionCredits) || 0,
         googleMeetLink: createForm.googleMeetLink.trim(),
       });
 
@@ -427,10 +447,28 @@ function Sessions() {
                       <select
                         value={createForm.categoryId}
                         onChange={(e) => handleChangeCreateField("categoryId", e.target.value)}
+                        required
                       >
-                        <option value="">— No category —</option>
-                        {apiCategories.map((cat) => (
+                        <option value="">— Choose a category —</option>
+                        {(allowedCategoryIds.length > 0
+                          ? apiCategories.filter((cat) => allowedCategoryIds.includes(cat.categoryId))
+                          : apiCategories
+                        ).map((cat) => (
                           <option key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* Duration */}
+                    <label className="sessions-page__create-field">
+                      <span>Declared duration</span>
+                      <select
+                        value={createForm.duration}
+                        onChange={(e) => handleChangeCreateField("duration", e.target.value)}
+                        required
+                      >
+                        {DURATION_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </label>
@@ -442,19 +480,6 @@ function Sessions() {
                         type="datetime-local"
                         value={createForm.date}
                         onChange={(e) => handleChangeCreateField("date", e.target.value)}
-                        required
-                      />
-                    </label>
-
-                    {/* Credits */}
-                    <label className="sessions-page__create-field">
-                      <span>Credits</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={createForm.sessionCredits}
-                        onChange={(e) => handleChangeCreateField("sessionCredits", e.target.value)}
                         required
                       />
                     </label>

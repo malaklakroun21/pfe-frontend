@@ -7,6 +7,8 @@ const PROFILE_TABS = [
   { key: "reviews", label: "Reviews" },
   { key: "sessions", label: "Sessions", ownOnly: true },
   { key: "projects", label: "Projects", ownOnly: true },
+  { key: "gamification", label: "Gamification" },
+  { key: "xp", label: "XP" },
 ];
 
 export function getProfileRecordById(records, profileId) {
@@ -215,6 +217,10 @@ function hasSectionContent(sectionKey, { skills, portfolio }, options = {}) {
       return options.isOwnProfile || options.isAdmin;
     case "projects":
       return options.isOwnProfile || options.isAdmin;
+    case "gamification":
+      return true;
+    case "xp":
+      return true;
     default:
       return false;
   }

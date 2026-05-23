@@ -16,16 +16,6 @@ const SETTINGS_PRESETS = [
     description: "Maximum number of members allowed in a project.",
   },
   {
-    key: "maintenance_mode_enabled",
-    value: "false",
-    description: "Enable maintenance mode for the platform.",
-  },
-  {
-    key: "mentor_validation_auto_approve",
-    value: "false",
-    description: "Automatically approve mentor validation requests.",
-  },
-  {
     key: "platform_support_email",
     value: "support@fenneky.com",
     description: "Support contact email shown to users.",

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../../api/client.js";
-import LevelCard from "../../XP/LevelCard.jsx";
 import Header from "../Layout/Header/Header.jsx";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./DashboardHome.css";
@@ -248,11 +247,22 @@ function DashboardHome() {
           <p>Loading dashboard...</p>
         ) : (
           <>
-            {xpProfile ? (
-              <div className="dashboard-home__xp">
-                <LevelCard xpProfile={xpProfile} showHistory />
+            <div className="dashboard-home__pills">
+              <div className="dashboard-home__pill">
+                Credits: <strong>{creditsAvailable}</strong>
               </div>
-            ) : null}
+              {xpProfile ? (
+                <div className="dashboard-home__pill">
+                  XP: <strong>
+                    {xpProfile.xpTotal ?? 0}
+                    {!xpProfile.isMaxLevel && xpProfile.nextLevelXP
+                      ? `/${xpProfile.nextLevelXP}`
+                      : ""}
+                  </strong>
+                  {" · "}Level {xpProfile.level ?? 1} — {xpProfile.levelTitle ?? "Seed"}
+                </div>
+              ) : null}
+            </div>
 
             <div className="dashboard-home__stats">
               {stats.map((stat) => (

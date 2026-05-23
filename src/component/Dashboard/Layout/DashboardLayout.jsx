@@ -8,7 +8,8 @@ import {
 import { getAuthUser } from "../../../authSession.js";
 import "./DashboardLayout.css";
 
-const ADMIN_HIDDEN_SECTIONS = new Set(["validation", "messages", "credits", "notifications"]);
+const ADMIN_HIDDEN_SECTIONS = new Set(["validation", "messages", "credits", "notifications", "mentor-inbox", "my-sessions"]);
+const MENTOR_ONLY_SECTIONS = new Set(["mentor-inbox"]);
 
 function DashboardLayout() {
   const navigate = useNavigate();
@@ -16,10 +17,18 @@ function DashboardLayout() {
   const activeItem = getDashboardSectionKeyFromPathname(location.pathname);
 
   const user = getAuthUser();
-  const isAdmin = String(user?.role || "").toLowerCase() === "admin";
-  const visibleSectionKeys = isAdmin
-    ? dashboardSectionKeys.filter((k) => !ADMIN_HIDDEN_SECTIONS.has(k))
-    : dashboardSectionKeys;
+  const role = String(user?.role || "").toLowerCase();
+  const isAdmin = role === "admin";
+  const isMentor = role === "mentor";
+
+  let visibleSectionKeys;
+  if (isAdmin) {
+    visibleSectionKeys = dashboardSectionKeys.filter((k) => !ADMIN_HIDDEN_SECTIONS.has(k));
+  } else if (isMentor) {
+    visibleSectionKeys = dashboardSectionKeys;
+  } else {
+    visibleSectionKeys = dashboardSectionKeys.filter((k) => !MENTOR_ONLY_SECTIONS.has(k));
+  }
 
   const handleItemSelect = (itemKey) => {
     const targetSection = getDashboardSection(itemKey);

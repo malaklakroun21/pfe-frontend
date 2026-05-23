@@ -60,6 +60,11 @@ function MySessionsPanel({ embedded = false }) {
   const [isCancellingSessionId, setIsCancellingSessionId] = useState("");
   const [isConfirmingSessionId, setIsConfirmingSessionId] = useState("");
   const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
+  const [isAcceptingSessionId, setIsAcceptingSessionId] = useState("");
+  const [isRejectingSessionId, setIsRejectingSessionId] = useState("");
+  // Actual duration input shown before submitting "Mark as Complete"
+  const [completingSessionId, setCompletingSessionId] = useState("");
+  const [actualDurationInput, setActualDurationInput] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -117,7 +122,19 @@ function MySessionsPanel({ embedded = false }) {
 
   const filteredSessions = sessionItems.filter((item) => item.status === activeTab);
 
-  async function handleCompleteSession(sessionId) {
+  function handleOpenCompleteForm(sessionId) {
+    setCompletingSessionId(sessionId);
+    setActualDurationInput("");
+    setErrorMessage("");
+  }
+
+  function handleCancelCompleteForm() {
+    setCompletingSessionId("");
+    setActualDurationInput("");
+  }
+
+  async function handleCompleteSession() {
+    const sessionId = completingSessionId;
     if (!sessionId || isCompletingSessionId) return;
 
     setErrorMessage("");
@@ -125,15 +142,22 @@ function MySessionsPanel({ embedded = false }) {
     setIsCompletingSessionId(sessionId);
 
     try {
-      await sessionApi.complete(sessionId);
+      const parsedDuration = parseFloat(actualDurationInput);
+      const payload = Number.isFinite(parsedDuration) && parsedDuration > 0
+        ? { actualDuration: parsedDuration }
+        : {};
+
+      await sessionApi.complete(sessionId, payload);
       setSessionItems((prev) =>
         prev.map((s) =>
           s.id === sessionId
-            ? { ...s, status: "awaiting", badge: "Awaiting Your Confirmation", canComplete: false }
+            ? { ...s, status: "awaiting", badge: "Awaiting Confirmation", canComplete: false }
             : s,
         ),
       );
-      setStatusMessage("Session marked as complete. Waiting for learner confirmation.");
+      setStatusMessage("Session marked as complete. Waiting for the other participant to confirm.");
+      setCompletingSessionId("");
+      setActualDurationInput("");
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
@@ -162,6 +186,50 @@ function MySessionsPanel({ embedded = false }) {
       setErrorMessage(error.message);
     } finally {
       setIsConfirmingSessionId("");
+    }
+  }
+
+  async function handleAcceptSession(sessionId) {
+    if (!sessionId || isAcceptingSessionId) return;
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsAcceptingSessionId(sessionId);
+    try {
+      await sessionApi.accept(sessionId);
+      setSessionItems((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, status: "upcoming", badge: "Confirmed", canAccept: false, canReject: false, canComplete: true }
+            : s,
+        ),
+      );
+      setStatusMessage("Join request accepted.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsAcceptingSessionId("");
+    }
+  }
+
+  async function handleRejectSession(sessionId) {
+    if (!sessionId || isRejectingSessionId) return;
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsRejectingSessionId(sessionId);
+    try {
+      await sessionApi.reject(sessionId);
+      setSessionItems((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, status: "cancelled", badge: "Cancelled", canAccept: false, canReject: false }
+            : s,
+        ),
+      );
+      setStatusMessage("Join request rejected.");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsRejectingSessionId("");
     }
   }
 
@@ -242,15 +310,69 @@ function MySessionsPanel({ embedded = false }) {
                       </div>
 
                       <div className="sessions-page__actions">
-                        {session.canComplete ? (
-                          <button
-                            type="button"
-                            className="sessions-page__action sessions-page__action--primary"
-                            disabled={isCompletingSessionId === session.id}
-                            onClick={() => handleCompleteSession(session.id)}
-                          >
-                            {isCompletingSessionId === session.id ? "Marking..." : "Mark as Complete"}
-                          </button>
+                        {session.canAccept ? (
+                          <>
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--ghost"
+                              disabled={isRejectingSessionId === session.id || isAcceptingSessionId === session.id}
+                              onClick={() => handleRejectSession(session.id)}
+                            >
+                              {isRejectingSessionId === session.id ? "Rejecting..." : "Reject"}
+                            </button>
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--primary"
+                              disabled={isAcceptingSessionId === session.id || isRejectingSessionId === session.id}
+                              onClick={() => handleAcceptSession(session.id)}
+                            >
+                              {isAcceptingSessionId === session.id ? "Accepting..." : "Accept"}
+                            </button>
+                          </>
+                        ) : session.canComplete ? (
+                          completingSessionId === session.id ? (
+                            <div className="sessions-page__complete-form">
+                              <label className="sessions-page__complete-label">
+                                <span>Actual duration (hours)</span>
+                                <input
+                                  type="number"
+                                  min="0.25"
+                                  max={session.durationHours || undefined}
+                                  step="0.25"
+                                  placeholder={session.durationHours ? `max ${session.durationHours}h` : "hours"}
+                                  value={actualDurationInput}
+                                  onChange={(e) => setActualDurationInput(e.target.value)}
+                                  className="sessions-page__complete-input"
+                                />
+                              </label>
+                              <div className="sessions-page__complete-actions">
+                                <button
+                                  type="button"
+                                  className="sessions-page__action sessions-page__action--ghost"
+                                  onClick={handleCancelCompleteForm}
+                                  disabled={!!isCompletingSessionId}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="sessions-page__action sessions-page__action--primary"
+                                  onClick={handleCompleteSession}
+                                  disabled={!!isCompletingSessionId}
+                                >
+                                  {isCompletingSessionId === session.id ? "Marking..." : "Confirm Complete"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="sessions-page__action sessions-page__action--primary"
+                              onClick={() => handleOpenCompleteForm(session.id)}
+                            >
+                              Mark as Complete
+                            </button>
+                          )
                         ) : session.canConfirm ? (
                           <button
                             type="button"

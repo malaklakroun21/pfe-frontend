@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { dashboardApi, mentorApplicationApi, projectApi, sessionApi, userApi, xpApi } from "../../../api/client.js";
 import LevelCard from "../../XP/LevelCard.jsx";
+import Gamification from "../Gamification/Gamification.jsx";
+import { MentoringRequestForm } from "../Validation/Validation.jsx";
 import { clearAuthSession, useAuthSession } from "../../../authSession.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
 import "./MySkills.css";
@@ -253,6 +255,8 @@ function buildPublicProfileRecord(profile = {}, ratingSummary = {}) {
     skills: buildPublicSkills(profile),
     portfolio: buildPublicPortfolio(profile),
     reviews: buildPublicReviews(ratingSummary),
+    mentorSkills: Array.isArray(profile.mentorSkills) ? profile.mentorSkills : [],
+    validatedSkills: Array.isArray(profile.validatedSkills) ? profile.validatedSkills : [],
   };
 }
 
@@ -410,6 +414,23 @@ function ReviewsTab({ profile }) {
         </article>
       ))}
     </>
+  );
+}
+
+function XpTab({ profile, isOwnProfile }) {
+  if (!profile.xp) {
+    return (
+      <article className="my-profile-page__content-card my-profile-page__empty-state-card">
+        <h3>XP</h3>
+        <p>No XP data yet. Complete teaching sessions to start earning XP.</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="my-profile-page__content-card">
+      <LevelCard xpProfile={profile.xp} showHistory={isOwnProfile} />
+    </article>
   );
 }
 
@@ -823,6 +844,10 @@ function ProfileContent({
           onCloseProject={onCloseProject}
         />
       ) : null;
+    case "gamification":
+      return <Gamification />;
+    case "xp":
+      return <XpTab profile={profile} isOwnProfile={isOwnProfile} />;
     case "about":
     default:
       return <AboutTab profile={profile} />;
@@ -884,11 +909,14 @@ function MyProfile() {
               xpApi.getMe().catch(() => null),
               sessionApi.list({ role: 'LEARNER' }).catch(() => null),
               projectApi.list({ memberId: user?.userId, limit: 100 }).catch(() => null),
-            ]).then(([ownProfile, xpProfile, sessionsData, projectsData]) => ({
+              user?.userId ? userApi.getUserById(user.userId).catch(() => null) : null,
+            ]).then(([ownProfile, xpProfile, sessionsData, projectsData, publicProfile]) => ({
               ...ownProfile,
               xp: xpProfile,
               sessions: Array.isArray(sessionsData) ? sessionsData : [],
               projects: Array.isArray(projectsData?.items) ? projectsData.items : [],
+              validatedSkills: publicProfile?.validatedSkills || [],
+              mentorSkills: publicProfile?.mentorSkills || [],
             }));
 
         if (!isActive) {
@@ -932,7 +960,7 @@ function MyProfile() {
     return null;
   }
 
-  const ADMIN_HIDDEN_TABS = new Set(["skills", "portfolio", "reviews", "sessions", "projects"]);
+  const ADMIN_HIDDEN_TABS = new Set(["skills", "portfolio", "reviews", "sessions", "projects", "gamification", "xp"]);
   const visibleTabs = isAdmin && isOwnProfile
     ? activeProfile.tabs.filter((tab) => !ADMIN_HIDDEN_TABS.has(tab.key))
     : activeProfile.tabs;
@@ -1231,7 +1259,15 @@ function MyProfile() {
         ) : null}
 
         {!(isAdmin && isOwnProfile) && activeProfile.xp ? (
-          <LevelCard xpProfile={activeProfile.xp} showHistory={isOwnProfile} />
+          <div className="my-profile-page__credits">
+            XP: <strong>
+              {activeProfile.xp.xpTotal ?? 0}
+              {!activeProfile.xp.isMaxLevel && activeProfile.xp.nextLevelXP
+                ? `/${activeProfile.xp.nextLevelXP}`
+                : ""}
+            </strong>
+            {" · "}Level {activeProfile.xp.level ?? 1} — {activeProfile.xp.levelTitle ?? "Seed"}
+          </div>
         ) : null}
       </section>
 
@@ -1311,6 +1347,22 @@ function MyProfile() {
           projectDetailError={projectDetailError}
           onCloseProject={handleCloseProject}
         />
+
+        {isOwnProfile && (() => {
+          const validatedSkills = Array.isArray(profileRecord?.validatedSkills)
+            ? profileRecord.validatedSkills
+            : [];
+          const mentorSkillNames = new Set(
+            (profileRecord?.mentorSkills || []).map((m) => m.skillName.toLowerCase())
+          );
+          const eligibleSkills = validatedSkills.filter(
+            (s) => !mentorSkillNames.has(s.skillName.toLowerCase())
+          ).map((s) => ({ skillId: s.skillId, label: s.skillName }));
+
+          return eligibleSkills.length > 0 ? (
+            <MentoringRequestForm validatedSkills={eligibleSkills} />
+          ) : null;
+        })()}
       </section>
     </div>
   );

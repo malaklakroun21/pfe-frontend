@@ -244,6 +244,16 @@ export const sessionApi = {
       method: "POST",
     });
   },
+  accept(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/accept`, {
+      method: "PATCH",
+    });
+  },
+  reject(sessionId) {
+    return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/reject`, {
+      method: "PATCH",
+    });
+  },
   complete(sessionId, payload = {}) {
     return apiRequest(`/sessions/${encodeURIComponent(sessionId)}/complete`, {
       method: "PATCH",
@@ -560,6 +570,11 @@ export const adminApi = {
     return adminApiRequest(`/settings/${encodeURIComponent(key)}`, {
       method: "PUT",
       body: payload,
+    });
+  },
+  deleteSetting(key) {
+    return adminApiRequest(`/settings/${encodeURIComponent(key)}`, {
+      method: "DELETE",
     });
   },
 };

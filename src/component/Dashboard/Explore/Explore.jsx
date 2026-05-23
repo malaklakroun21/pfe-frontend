@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { dashboardApi } from "../../../api/client.js";
+import { dashboardApi, projectApi, sessionApi } from "../../../api/client.js";
 import { useNotificationsState } from "../Notifications/notificationsStore.js";
 import ViewFrame from "../Layout/ViewFrame/ViewFrame.jsx";
 import "./Explore.css";
@@ -9,12 +9,7 @@ function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="m20 20-3.5-3.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -22,33 +17,8 @@ function SearchIcon() {
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M15 17H5.5l1.6-2.13V10a4.9 4.9 0 1 1 9.8 0v4.87L18.5 17"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 19a2 2 0 0 0 4 0"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M3.75 6h16.5l-6.5 7.1v5.2l-3.5-1.95V13.1L3.75 6Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M15 17H5.5l1.6-2.13V10a4.9 4.9 0 1 1 9.8 0v4.87L18.5 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -61,93 +31,172 @@ function StarIcon() {
   );
 }
 
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width="16" height="16">
+      <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(d);
+}
+
+function buildFullName(user) {
+  if (!user) return "Unknown";
+  return [user.firstName, user.lastName].filter(Boolean).join(" ") || "Unknown";
+}
+
+function SectionHeader({ title, onSeeAll }) {
+  return (
+    <div className="explore-section__head">
+      <h2 className="explore-section__title">{title}</h2>
+      <button type="button" className="explore-section__see-all" onClick={onSeeAll}>
+        See all <ArrowIcon />
+      </button>
+    </div>
+  );
+}
+
+function MentorCard({ mentor, onView }) {
+  return (
+    <article className="explore-page__card">
+      <div className="explore-page__card-avatar">{mentor.initials}</div>
+      <div className="explore-page__card-copy">
+        <h3>{mentor.name}</h3>
+        <div className="explore-page__rating">
+          <span className="explore-page__rating-icon"><StarIcon /></span>
+          <strong>{mentor.rating}</strong>
+          <span>({mentor.reviews} reviews)</span>
+        </div>
+      </div>
+      <div className="explore-page__skills-block">
+        <p>Top Skills:</p>
+        <div className="explore-page__skill-tags">
+          {mentor.skills.map((skill) => (
+            <span key={skill} className="explore-page__skill-tag">{skill}</span>
+          ))}
+        </div>
+      </div>
+      <div className="explore-page__card-footer">
+        <span className="explore-page__price">{mentor.price}</span>
+        <button type="button" className="explore-page__profile-button" onClick={() => onView(mentor.id)}>
+          View Profile
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function SessionCard({ session, onView }) {
+  const teacherName = buildFullName(session.teacher);
+  const dateLabel = formatShortDate(session.date);
+  const duration = session.durationHours ?? session.duration;
+  const durationLabel = duration ? `${duration}h` : "";
+
+  return (
+    <article className="explore-card explore-card--session">
+      <div className="explore-card__top">
+        <span className="explore-card__tag">{session.skillName || "Session"}</span>
+        {durationLabel ? <span className="explore-card__duration">{durationLabel}</span> : null}
+      </div>
+      <p className="explore-card__teacher">by {teacherName}</p>
+      {dateLabel ? <p className="explore-card__date">{dateLabel}</p> : null}
+      <button type="button" className="explore-card__btn" onClick={() => onView(session.sessionId)}>
+        View Session
+      </button>
+    </article>
+  );
+}
+
+function ProjectCard({ project, onView }) {
+  const memberCount = Array.isArray(project.members) ? project.members.length : 0;
+
+  return (
+    <article className="explore-card explore-card--project">
+      <div className="explore-card__top">
+        <span className="explore-card__tag explore-card__tag--project">{project.requiredSkill || "Open Project"}</span>
+        <span className="explore-card__members">{memberCount} member{memberCount !== 1 ? "s" : ""}</span>
+      </div>
+      <h3 className="explore-card__title">{project.title}</h3>
+      {project.description ? (
+        <p className="explore-card__desc">{project.description}</p>
+      ) : null}
+      <button type="button" className="explore-card__btn explore-card__btn--project" onClick={() => onView(project.projectId)}>
+        View Project
+      </button>
+    </article>
+  );
+}
+
 function Explore() {
   const navigate = useNavigate();
   const { unreadCount } = useNotificationsState();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [categories, setCategories] = useState(["All"]);
-  const [mentorDirectory, setMentorDirectory] = useState([]);
+  const [mentors, setMentors] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadExploreDirectory() {
+    async function load() {
       setIsLoading(true);
-      setErrorMessage("");
+      const [directoryResult, sessionsResult, projectsResult] = await Promise.allSettled([
+        dashboardApi.getExploreDirectory(),
+        sessionApi.listDirectory(),
+        projectApi.list({ status: "OPEN", limit: "4" }),
+      ]);
 
-      try {
-        const directory = await dashboardApi.getExploreDirectory();
+      if (!isActive) return;
 
-        if (!isActive) {
-          return;
-        }
-
-        setCategories(Array.isArray(directory?.categories) ? directory.categories : ["All"]);
-        setMentorDirectory(Array.isArray(directory?.mentors) ? directory.mentors : []);
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-
-        setErrorMessage(error.message);
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
+      if (directoryResult.status === "fulfilled") {
+        const dir = directoryResult.value;
+        setCategories(Array.isArray(dir?.categories) ? dir.categories : ["All"]);
+        setMentors(Array.isArray(dir?.mentors) ? dir.mentors : []);
       }
+
+      if (sessionsResult.status === "fulfilled") {
+        const raw = sessionsResult.value;
+        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.sessions) ? raw.sessions : []);
+        setSessions(list.slice(0, 4));
+      }
+
+      if (projectsResult.status === "fulfilled") {
+        const raw = projectsResult.value;
+        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+        setProjects(list.slice(0, 4));
+      }
+
+      setIsLoading(false);
     }
 
-    loadExploreDirectory();
-
-    return () => {
-      isActive = false;
-    };
+    load();
+    return () => { isActive = false; };
   }, []);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredMentors = mentorDirectory.filter((mentor) => {
-    const matchesCategory =
-      activeCategory === "All" || mentor.category === activeCategory;
-
-    if (!matchesCategory) {
-      return false;
-    }
-
-    if (!normalizedSearch) {
-      return true;
-    }
-
-    const searchableText = [
-      mentor.name,
-      mentor.category,
-      mentor.skills.join(" "),
-      mentor.price,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(normalizedSearch);
-  });
+  const filteredMentors = mentors.filter((mentor) => {
+    if (activeCategory !== "All" && mentor.category !== activeCategory) return false;
+    if (!normalizedSearch) return true;
+    return [mentor.name, mentor.category, ...(mentor.skills || [])].join(" ").toLowerCase().includes(normalizedSearch);
+  }).slice(0, 6);
 
   return (
     <ViewFrame
       header={
         <header className="explore-page__header">
-          <h1>Explore Skills</h1>
-
-          <button
-            type="button"
-            className="explore-page__notification-button"
-            aria-label="Notifications"
-            onClick={() => navigate("/app/notifications")}
-          >
+          <h1>Explore</h1>
+          <button type="button" className="explore-page__notification-button" aria-label="Notifications" onClick={() => navigate("/app/notifications")}>
             <BellIcon />
-            {unreadCount > 0 ? (
-              <span className="explore-page__notification-dot" aria-hidden="true" />
-            ) : null}
+            {unreadCount > 0 ? <span className="explore-page__notification-dot" aria-hidden="true" /> : null}
           </button>
         </header>
       }
@@ -155,110 +204,71 @@ function Explore() {
       <section className="explore-page">
         <div className="explore-page__controls">
           <div className="explore-page__inner">
-            <div className="explore-page__toolbar">
-              <label className="explore-page__search" aria-label="Search mentors">
-                <span className="explore-page__search-icon">
-                  <SearchIcon />
-                </span>
-
-                <input
-                  type="search"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search by skill or mentor name..."
-                  aria-label="Search by skill or mentor name"
-                />
-              </label>
-
-              <button
-                type="button"
-                className="explore-page__filter-button"
-                aria-label="Open filters"
-              >
-                <span className="explore-page__filter-icon">
-                  <FilterIcon />
-                </span>
-                <span>Filters</span>
-              </button>
-            </div>
-
+            <label className="explore-page__search" aria-label="Search mentors">
+              <span className="explore-page__search-icon"><SearchIcon /></span>
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search mentors by skill or name..."
+                aria-label="Search mentors"
+              />
+            </label>
             <div className="explore-page__categories" aria-label="Skill categories">
-              {categories.map((category) => {
-                const isActive = activeCategory === category;
-
-                return (
-                  <button
-                    key={category}
-                    type="button"
-                    className={`explore-page__category ${isActive ? "is-active" : ""}`}
-                    onClick={() => setActiveCategory(category)}
-                    aria-pressed={isActive}
-                  >
-                    {category}
-                  </button>
-                );
-              })}
+              {categories.map((cat) => (
+                <button key={cat} type="button" className={`explore-page__category ${activeCategory === cat ? "is-active" : ""}`} onClick={() => setActiveCategory(cat)} aria-pressed={activeCategory === cat}>
+                  {cat}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         <div className="explore-page__results">
           <div className="explore-page__inner">
-            {errorMessage ? <p>{errorMessage}</p> : null}
-            <p className="explore-page__results-count">
-              {filteredMentors.length} mentor{filteredMentors.length === 1 ? "" : "s"} found
-            </p>
-
             {isLoading ? (
-              <div className="explore-page__empty">Loading mentors...</div>
-            ) : filteredMentors.length > 0 ? (
-              <div className="explore-page__grid">
-                {filteredMentors.map((mentor) => (
-                  <article key={mentor.id} className="explore-page__card">
-                    <div className="explore-page__card-avatar">{mentor.initials}</div>
-
-                    <div className="explore-page__card-copy">
-                      <h2>{mentor.name}</h2>
-
-                      <div className="explore-page__rating">
-                        <span className="explore-page__rating-icon">
-                          <StarIcon />
-                        </span>
-                        <strong>{mentor.rating}</strong>
-                        <span>({mentor.reviews} reviews)</span>
-                      </div>
-                    </div>
-
-                    <div className="explore-page__skills-block">
-                      <p>Top Skills:</p>
-
-                      <div className="explore-page__skill-tags">
-                        {mentor.skills.map((skill) => (
-                          <span key={skill} className="explore-page__skill-tag">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="explore-page__card-footer">
-                      <span className="explore-page__price">{mentor.price}</span>
-
-                      <button
-                        type="button"
-                        className="explore-page__profile-button"
-                        onClick={() => navigate(`/app/profile/${encodeURIComponent(mentor.id)}`)}
-                      >
-                        View Profile
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <div className="explore-page__empty">Loading...</div>
             ) : (
-              <div className="explore-page__empty">
-                No mentors match this search yet.
-              </div>
+              <>
+                <div className="explore-section">
+                  <SectionHeader title="Mentors" onSeeAll={() => navigate("/app/explore")} />
+                  {filteredMentors.length > 0 ? (
+                    <div className="explore-page__grid">
+                      {filteredMentors.map((mentor) => (
+                        <MentorCard key={mentor.id} mentor={mentor} onView={(id) => navigate(`/app/profile/${encodeURIComponent(id)}`)} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="explore-page__empty">No mentors match this search yet.</div>
+                  )}
+                </div>
+
+                <div className="explore-section">
+                  <SectionHeader title="Sessions" onSeeAll={() => navigate("/app/sessions")} />
+                  {sessions.length > 0 ? (
+                    <div className="explore-cards-row">
+                      {sessions.map((session) => (
+                        <SessionCard key={session.sessionId} session={session} onView={() => navigate("/app/sessions")} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="explore-page__empty">No open sessions right now.</div>
+                  )}
+                </div>
+
+                <div className="explore-section">
+                  <SectionHeader title="Projects" onSeeAll={() => navigate("/app/projects")} />
+                  {projects.length > 0 ? (
+                    <div className="explore-cards-row">
+                      {projects.map((project) => (
+                        <ProjectCard key={project.projectId} project={project} onView={(id) => navigate(`/app/projects/${encodeURIComponent(id)}`)} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="explore-page__empty">No open projects right now.</div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { dashboardApi, mentorApplicationApi } from "../../../api/client.js";
-import { useAuthSession } from "../../../authSession.js";
 import ThemedSelect from "../../shared/ThemedSelect/ThemedSelect.jsx";
-import MentorValidationInbox from "./MentorValidationInbox.jsx";
 import "./Validation.css";
-
-function isMentorUser(user) {
-  const role = String(user?.role || "").toUpperCase();
-  return role === "MENTOR" || role === "ADMIN";
-}
 
 function ValidationBadgeIcon() {
   return (
@@ -159,6 +152,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
                   onChange={(nextValue) => {
                     setSelectedSkillId(nextValue);
                     setCustomSkillName("");
+                    setSelectedMentorId("");
                   }}
                 />
               </label>
@@ -181,22 +175,40 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
             ) : null}
           </div>
         );
-      case "choose-mentor":
+      case "choose-mentor": {
+        const skillId = selectedSkill?.id;
+        const isCustomSkill = !skillId || skillId === "custom-skill";
+        const generalMentors = mentorOptions.filter(
+          (m) => !Array.isArray(m.skillIds) || m.skillIds.length === 0
+        );
+        const exactMentors = !isCustomSkill
+          ? mentorOptions.filter((m) => Array.isArray(m.skillIds) && m.skillIds.includes(skillId))
+          : [];
+        const combined = [...new Map([...exactMentors, ...generalMentors].map((m) => [m.id, m])).values()];
+        const displayMentors = combined.length > 0 ? combined : mentorOptions;
+        const isFiltered = combined.length > 0 && combined.length < mentorOptions.length;
+
         return (
           <div className="validation-page__wizard-body validation-page__wizard-body--mentor">
             <div className="validation-page__wizard-copy">
               <h4>Choose a mentor to validate your skill</h4>
             </div>
 
-            {mentorOptions.length > 0 ? (
+            {displayMentors.length > 0 ? (
               <>
+                {isFiltered && (
+                  <p className="validation-page__wizard-helper">
+                    Showing mentors specialized in <strong>{selectedSkill.label}</strong>
+                  </p>
+                )}
+
                 <label className="validation-page__wizard-field">
                   <span>Mentor list</span>
                   <ThemedSelect
                     value={selectedMentorId}
                     options={[
                       { value: "", label: "Choose one mentor" },
-                      ...mentorOptions.map((mentor) => ({
+                      ...displayMentors.map((mentor) => ({
                         value: mentor.id,
                         label: mentor.name,
                         description: mentor.specialty,
@@ -227,6 +239,7 @@ function RequestValidationWizard({ requestFlow, onSubmitRequest }) {
             )}
           </div>
         );
+      }
       case "evidence":
         return (
           <div className="validation-page__wizard-body">
@@ -421,13 +434,14 @@ function LearnerSkillStatuses({ skills = [] }) {
   );
 }
 
-function MentoringRequestForm({ validatedSkills }) {
+export function MentoringRequestForm({ validatedSkills }) {
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const canSubmit = Boolean(selectedSkillId) && !isSubmitting && !isSubmitted;
+  const hasEligibleSkills = Array.isArray(validatedSkills) && validatedSkills.length > 0;
+  const canSubmit = hasEligibleSkills && Boolean(selectedSkillId) && !isSubmitting && !isSubmitted;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -455,110 +469,78 @@ function MentoringRequestForm({ validatedSkills }) {
           </p>
         </div>
 
-        <label className="validation-page__wizard-field">
-          <span>Validated skill</span>
-          <ThemedSelect
-            value={selectedSkillId}
-            options={[
-              { value: "", label: "Choose a validated skill" },
-              ...validatedSkills.map((skill) => ({
-                value: skill.skillId,
-                label: skill.label,
-              })),
-            ]}
-            onChange={(val) => setSelectedSkillId(val)}
-          />
-        </label>
+        {validatedSkills.length === 0 ? (
+          <div className="validation-page__wizard-empty-state">
+            <strong>No validated skills yet.</strong>
+            <p>Complete a skill validation request above first, then come back here to apply for mentoring status.</p>
+          </div>
+        ) : (
+          <label className="validation-page__wizard-field">
+            <span>Validated skill</span>
+            <ThemedSelect
+              value={selectedSkillId}
+              options={[
+                { value: "", label: "Choose a validated skill" },
+                ...validatedSkills.map((skill) => ({
+                  value: skill.skillId,
+                  label: skill.label,
+                })),
+              ]}
+              onChange={(val) => setSelectedSkillId(val)}
+            />
+          </label>
+        )}
       </div>
 
-      <div className="validation-page__wizard-footer">
-        {submitError ? <p style={{ color: "var(--color-error, #e05)" }}>{submitError}</p> : null}
-        {isSubmitted ? (
-          <p style={{ color: "var(--color-success, #0a0)" }}>
-            Application submitted. An admin will review it shortly.
-          </p>
-        ) : null}
+      {hasEligibleSkills ? (
+        <div className="validation-page__wizard-footer">
+          {submitError ? <p style={{ color: "var(--color-error, #e05)" }}>{submitError}</p> : null}
+          {isSubmitted ? (
+            <p style={{ color: "var(--color-success, #0a0)" }}>
+              Application submitted. An admin will review it shortly.
+            </p>
+          ) : null}
 
-        <button
-          type="button"
-          className="validation-page__wizard-primary"
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-        >
-          {isSubmitting ? "Sending..." : isSubmitted ? "Application sent" : "Apply for Mentor Status"}
-        </button>
-      </div>
+          <button
+            type="button"
+            className="validation-page__wizard-primary"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {isSubmitting ? "Sending..." : isSubmitted ? "Application sent" : "Apply for Mentor Status"}
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }
 
 function Validation() {
-  const { user } = useAuthSession();
-  const isMentor = isMentorUser(user);
   const [pageData, setPageData] = useState(null);
-  const [isLoading, setIsLoading] = useState(!isMentor);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    if (isMentor) {
-      return undefined;
-    }
-
     let isActive = true;
 
     async function loadValidationPage() {
       setIsLoading(true);
       setHasError(false);
-
       try {
         const data = await dashboardApi.getValidationData();
-
-        if (!isActive) {
-          return;
-        }
-
+        if (!isActive) return;
         setPageData(data);
       } catch {
-        if (!isActive) {
-          return;
-        }
-
+        if (!isActive) return;
         setHasError(true);
       } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
+        if (isActive) setIsLoading(false);
       }
     }
 
     loadValidationPage();
-
-    return () => {
-      isActive = false;
-    };
-  }, [isMentor]);
-
-  if (isMentor) {
-    return (
-      <section className="validation-page">
-        <article className="validation-page__card validation-page__card--intro">
-          <div className="validation-page__intro-icon">
-            <ValidationBadgeIcon />
-          </div>
-
-          <div className="validation-page__intro-copy">
-            <h2>Review learner validation requests</h2>
-            <p>
-              Accept requests with a score so learners can teach the skill, or reject them to
-              block teaching until they improve and resubmit.
-            </p>
-          </div>
-        </article>
-
-        <MentorValidationInbox />
-      </section>
-    );
-  }
+    return () => { isActive = false; };
+  }, []);
 
   if (isLoading) {
     return (
@@ -597,11 +579,9 @@ function Validation() {
         <div className="validation-page__intro-icon">
           <ValidationBadgeIcon />
         </div>
-
         <div className="validation-page__intro-copy">
           <h2>{pageData.intro.title}</h2>
           <p>{pageData.intro.description}</p>
-
           <ul className="validation-page__benefits">
             {pageData.intro.benefits.map((benefit) => (
               <li key={benefit}>{benefit}</li>
@@ -610,34 +590,21 @@ function Validation() {
         </div>
       </article>
 
-
       <RequestValidationWizard
         requestFlow={pageData.requestFlow}
-        onSubmitRequest={async ({
-          selectedSkill,
-          selectedMentor,
-          portfolioLink,
-          validatorNote,
-          uploadedFile,
-        }) => {
+        onSubmitRequest={async ({ selectedSkill, selectedMentor, portfolioLink, validatorNote, uploadedFile }) => {
           const formData = new FormData();
           formData.append("skillName", selectedSkill?.label || "");
           formData.append("mentorUserId", selectedMentor?.id || "");
           formData.append("portfolioLink", portfolioLink || "");
           formData.append("note", validatorNote || "");
-          if (selectedSkill?.skillId) {
-            formData.append("skillId", selectedSkill.skillId);
-          }
-          if (uploadedFile) {
-            formData.append("proofFile", uploadedFile);
-          }
+          if (selectedSkill?.skillId) formData.append("skillId", selectedSkill.skillId);
+          if (uploadedFile) formData.append("proofFile", uploadedFile);
           await dashboardApi.createValidationRequest(formData);
         }}
       />
 
-      {validatedSkills.length > 0 ? (
-        <MentoringRequestForm validatedSkills={validatedSkills} />
-      ) : null}
+      <MentoringRequestForm validatedSkills={validatedSkills} />
     </section>
   );
 }

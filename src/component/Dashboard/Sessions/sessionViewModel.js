@@ -77,13 +77,12 @@ function getNormalizedSessionDurationHours(session = {}) {
 }
 
 function getNormalizedSessionCredits(session = {}) {
+  // After completion, use the actual calculated value (T × S × M).
   const explicitCredits = Number(session.chargedCredits ?? session.creditsExchanged);
   if (Number.isFinite(explicitCredits) && explicitCredits > 0) return explicitCredits;
 
-  const sessionCredits = Number(session.sessionCredits);
-  if (Number.isFinite(sessionCredits) && sessionCredits > 0) return sessionCredits;
-
-  return getNormalizedSessionDurationHours(session);
+  // Before completion: credits are not yet known (calculated at end).
+  return null;
 }
 
 export function buildFullName(user) {
@@ -141,11 +140,15 @@ export function formatDurationLabel(duration) {
 }
 
 export function formatCreditLabel(credits) {
+  if (credits === null || credits === undefined) {
+    return "Credits calculated at end";
+  }
+
   if (!credits) {
     return "0 credits";
   }
 
-  return `${credits} credits`;
+  return `${credits} credit${credits === 1 ? "" : "s"}`;
 }
 
 export function buildCategoryKey(label = "") {
@@ -205,6 +208,10 @@ export function mapOwnedSession(session, viewerUserId) {
   const isLearner = session.learnerId === viewerUserId;
   const description = session.message?.trim() || "No message added for this session.";
 
+  // Only allow completion actions after the session date/time has passed.
+  const sessionTimestamp = sessionDate ? new Date(sessionDate).getTime() : 0;
+  const hasSessionPassed = sessionTimestamp > 0 && Date.now() >= sessionTimestamp;
+
   return {
     id: session.sessionId,
     participantUserId: otherParticipant?.userId || "",
@@ -213,6 +220,7 @@ export function mapOwnedSession(session, viewerUserId) {
     participantName: buildFullName(otherParticipant),
     date: formatDateLabel(sessionDate),
     time: formatTimeLabel(sessionDate),
+    durationHours,
     duration: formatDurationLabel(durationHours),
     credits: formatCreditLabel(credits),
     status: statusConfig.tabKey,
@@ -220,10 +228,17 @@ export function mapOwnedSession(session, viewerUserId) {
     description,
     canCancel: isLearner && normalizedStatus === "PENDING",
     canDelete: normalizedStatus !== "COMPLETED",
-    // Teacher marks the session done; triggers AWAITING_CONFIRMATION state.
-    canComplete: isTeacher && normalizedStatus === "ACCEPTED" && !session.teacherCompleted,
-    // Learner confirms once teacher has marked the session complete.
-    canConfirm: isLearner && normalizedStatus === "AWAITING_CONFIRMATION" && !session.learnerConfirmed,
+    // Teacher accepts/rejects join requests from learners.
+    canAccept: isTeacher && normalizedStatus === "PENDING",
+    canReject: isTeacher && normalizedStatus === "PENDING",
+    // Either participant can mark the session done — only after the scheduled time has passed.
+    canComplete: (isTeacher || isLearner) && normalizedStatus === "ACCEPTED" && !session.teacherCompleted && hasSessionPassed,
+    // The OTHER participant (not who marked complete) confirms — triggers credit transfer.
+    // No date check here: if status is AWAITING_CONFIRMATION the backend already verified the date.
+    canConfirm: normalizedStatus === "AWAITING_CONFIRMATION" && !session.learnerConfirmed &&
+      (session.completedByUserId
+        ? viewerUserId !== session.completedByUserId && (isTeacher || isLearner)
+        : isLearner),
     creditFormula: session.creditFormula || "",
     skillTierMultiplier: session.skillTierMultiplier ?? 1.0,
     trustModifier: session.trustModifier ?? 1.0,
@@ -242,6 +257,10 @@ export function mapDirectorySession(session, viewerUserId) {
   const durationHours = getNormalizedSessionDurationHours(session) || 1;
   const isoDate = sessionDate ? new Date(sessionDate).toISOString() : "";
   const credits = getNormalizedSessionCredits(session);
+
+  // In the catalog, ACCEPTED + no learner = open slot, not a "confirmed" booking.
+  const isOpenSlot = normalizedStatus === "ACCEPTED" && !session.learnerId;
+  const catalogBadge = isOpenSlot ? "Open" : statusConfig.badge;
 
   return {
     id: session.sessionId,
@@ -265,7 +284,7 @@ export function mapDirectorySession(session, viewerUserId) {
     duration: formatDurationLabel(durationHours),
     credits: formatCreditLabel(credits),
     status: statusConfig.tabKey,
-    badge: statusConfig.badge,
+    badge: catalogBadge,
     googleMeetLink: session.googleMeetLink || "",
     sessionDescription: session.message || "",
     searchText: [

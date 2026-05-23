@@ -1,13 +1,15 @@
 export const dashboardSectionKeys = [
   "dashboard",
-  "skills",
   "explore",
   "sessions",
   "projects",
   "messages",
-  "credits",
+  "my-sessions",
   "validation",
+  "mentor-inbox",
+  "credits",
   "notifications",
+  "skills",
   "settings",
 ];
 
@@ -15,7 +17,7 @@ export const dashboardSections = {
   dashboard: {
     key: "dashboard",
     route: "/app",
-    navLabel: "Dashboard",
+    navLabel: "Home",
     icon: "dashboard",
     title: "Dashboard overview",
     subtitle: "Follow your activity, your learning progress, and the latest platform updates.",
@@ -118,6 +120,17 @@ export const dashboardSections = {
       },
     ],
   },
+  "my-sessions": {
+    key: "my-sessions",
+    route: "/app/my-sessions",
+    navLabel: "My Sessions",
+    icon: "sessions",
+    title: "My Sessions",
+    headerTitle: "My Sessions",
+    subtitle: "Track your upcoming, pending, and completed sessions.",
+    stats: [],
+    cards: [],
+  },
   projects: {
     key: "projects",
     route: "/app/projects",
@@ -215,6 +228,17 @@ export const dashboardSections = {
       },
     ],
   },
+  "mentor-inbox": {
+    key: "mentor-inbox",
+    route: "/app/mentor-inbox",
+    navLabel: "Mentor Inbox",
+    icon: "validation",
+    title: "Mentor Inbox",
+    headerTitle: "Mentor Inbox",
+    subtitle: "Review learner validation requests, accept or reject them with a score.",
+    stats: [],
+    cards: [],
+  },
   notifications: {
     key: "notifications",
     route: "/app/notifications",
@@ -271,6 +295,7 @@ export function getDashboardSection(sectionKey) {
 
 export function getDashboardSectionKeyFromPathname(pathname) {
   const segment = pathname.replace(/^\/app\/?/, "").split("/")[0];
-
-  return dashboardSections[segment] ? segment : "dashboard";
+  const knownCompound = ["mentor-inbox", "my-sessions"];
+  const key = knownCompound.includes(segment) ? segment : segment;
+  return dashboardSections[key] ? key : "dashboard";
 }

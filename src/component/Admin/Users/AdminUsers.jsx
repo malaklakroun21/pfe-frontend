@@ -13,7 +13,7 @@ const ROLE_OPTIONS = [
   { value: "user", label: "USER" },
 ];
 
-const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED", "BANNED"];
+const STATUS_OPTIONS = ["", "ACTIVE", "BANNED"];
 
 const ALL_PERMISSIONS = [
   "manage_users",
@@ -32,10 +32,6 @@ function statusPillClass(status) {
 
   if (normalizedStatus === "ACTIVE") {
     return "admin-pill admin-pill--active";
-  }
-
-  if (normalizedStatus === "SUSPENDED") {
-    return "admin-pill admin-pill--suspended";
   }
 
   if (normalizedStatus === "BANNED") {
@@ -168,74 +164,6 @@ function PermissionsPanel({ userId, onClose, onSaved }) {
   );
 }
 
-function EditUserPanel({ user, onClose, onSaved }) {
-  const [name, setName] = useState([user.firstName, user.lastName].filter(Boolean).join(" "));
-  const [email, setEmail] = useState(user.email || "");
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSave = async (event) => {
-    event.preventDefault();
-    setIsSaving(true);
-    setError("");
-
-    try {
-      await adminApi.updateUser(user.userId, { name, email });
-      onSaved();
-    } catch (nextError) {
-      setError(nextError.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="admin-permissions-panel">
-      <div className="admin-permissions-panel__header">
-        <strong>Modifier - {[user.firstName, user.lastName].filter(Boolean).join(" ") || user.userId}</strong>
-        <button type="button" className="admin-button admin-button--ghost" onClick={onClose}>
-          Fermer
-        </button>
-      </div>
-
-      {error ? <p className="admin-muted">{error}</p> : null}
-
-      <form onSubmit={handleSave}>
-        <div
-          className="admin-toolbar__group"
-          style={{ flexDirection: "column", alignItems: "flex-start", gap: 10 }}
-        >
-          <div className="admin-field">
-            <label>Nom complet</label>
-            <input
-              className="admin-input"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Prenom Nom"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div className="admin-field">
-            <label>Email</label>
-            <input
-              className="admin-input"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="email@example.com"
-              disabled={isSaving}
-            />
-          </div>
-
-          <button type="submit" className="admin-button" disabled={isSaving}>
-            {isSaving ? "Enregistrement..." : "Enregistrer"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
 
 function AdminUsers() {
   const [query, setQuery] = useState("");
@@ -248,7 +176,6 @@ function AdminUsers() {
   const [errorMessage, setErrorMessage] = useState("");
   const [busyUserId, setBusyUserId] = useState("");
   const [permsPanelUserId, setPermsPanelUserId] = useState(null);
-  const [editPanelUser, setEditPanelUser] = useState(null);
 
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 1;
@@ -462,19 +389,7 @@ function AdminUsers() {
           />
         ) : null}
 
-        {editPanelUser ? (
-          <EditUserPanel
-            key={`edit-${editPanelUser.userId}`}
-            user={editPanelUser}
-            onClose={() => setEditPanelUser(null)}
-            onSaved={() => {
-              setEditPanelUser(null);
-              fetchUsers();
-            }}
-          />
-        ) : null}
-
-        <div className="admin-card">
+<div className="admin-card">
           <table className="admin-table">
             <thead>
               <tr>
@@ -551,15 +466,6 @@ function AdminUsers() {
                                 handleQuickStatusChange(userId, nextValue);
                               }}
                             />
-
-                            <button
-                              type="button"
-                              className="admin-button admin-button--ghost"
-                              disabled={isBusy}
-                              onClick={() => setEditPanelUser(user)}
-                            >
-                              Modifier
-                            </button>
 
                             <button
                               type="button"

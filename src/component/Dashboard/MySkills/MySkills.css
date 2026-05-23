@@ -91,6 +91,18 @@
   font-weight: 600;
 }
 
+.my-profile-page__mentor-skills {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #e8f4ff;
+  color: #1a4f8a;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .my-profile-page__rating {
   display: inline-flex;
   align-items: center;
