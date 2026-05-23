@@ -124,16 +124,10 @@ export const authApi = {
     });
   },
   forgotPassword(payload) {
-    return apiRequest("/auth/forgot-password", {
-      method: "POST",
-      body: payload,
-    });
+    return apiRequest("/auth/forgot-password", { method: "POST", body: payload });
   },
   resetPassword(payload) {
-    return apiRequest("/auth/reset-password", {
-      method: "POST",
-      body: payload,
-    });
+    return apiRequest("/auth/reset-password", { method: "POST", body: payload });
   },
 };
 

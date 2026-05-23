@@ -30,15 +30,16 @@ const Login = ({ isSubmitting = false, errorMessage = "" }) => {
               placeholder="Enter your password"
             />
           </div>
-          <Link to="/forgot-password" className="Login-forgot-password">
-            Forgot Password?
-          </Link>
 
           {errorMessage ? <p>{errorMessage}</p> : null}
 
           <button type="submit" className="Login-submit" disabled={isSubmitting}>
             {isSubmitting ? "Connexion..." : "Log In"}
           </button>
+
+          <div className="Login-forgot">
+            <Link to="/forgot-password" className="Login-forgot-link">Forgot Password?</Link>
+          </div>
 
           <div className="Login-divider">
             <span className="Login-divider-line" />

@@ -224,7 +224,6 @@ function ForgotPasswordPage() {
         setDebugCode(response.debugCode)
       }
       event.target.reset()
-      // Navigate to reset page with email so the user doesn't have to retype it
       navigate("/reset-password", { state: { email } })
     } catch (error) {
       setErrorMessage(error.message)
